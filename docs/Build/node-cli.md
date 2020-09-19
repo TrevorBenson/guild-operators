@@ -44,7 +44,22 @@ cardano-node version
 # git rev 4814003f14340d5a1fc02f3ac15437387a7ada9f
 ```
 
-##### Start a passive node
+##### Update port number or pool name for relative paths
+
+Before you go ahead with starting your node, you may want to update values for CNODE_PORT in `$CNODE_HOME/scripts/cnode.sh`. Note that it is imperative for operational relays and pools to ensure that the port mentioned is opened via firewall to the destination your node is supposed to connect from. Update your network/firewall configuration accordingly. Future executions of prereqs.sh will preserve and not overwrite these values.
+
+```bash
+## Static (content that will not be overwritten by prereqs.sh)
+## Begin
+
+POOL_NAME="GUILD"
+CNODE_PORT=6000
+POOL_DIR="$CNODE_HOME/priv/pool/$POOL_NAME"
+```
+
+> POOL_NAME is the name of folder that you will use when registering pools and starting node in core mode. This folder would typically contain your `hot.skey`,`vrf.skey` and `op.cert` files required. If the mentioned files are absent, the node will automatically start in a passive mode.
+
+##### Start the node
 
 To test starting the node in interactive mode, you can use the pre-built script below (note that the config now uses `SimpleView` so you may not see much output):
 
@@ -85,6 +100,6 @@ You can use [gLiveView](Scripts/gliveview.md) to monitor your pool that was star
 If you've followed guide from this repo previously and would like to transfer to systemd usage, please checkout the steps below:
 
 1. Stop previous instance of node if already running (eg: in tmux)
-2. Run `prereqs.sh`, but remember to preserve your customisations to cnode.sh, topology.json, env files.
+2. Run `prereqs.sh`, but remember to preserve your customisations to cnode.sh, topology.json, env files (you can also compare and update cnode.sh and env files from github repo).
 3. Follow the instructions [above](#run-as-systemd-service) to setup your node as a service and start it using systemctl as directed.
-4. If you need to monitor via interactive terminal as before, use [sLiveView](Scripts/sliveview.md).
+4. If you need to monitor via interactive terminal as before, use [gLiveView](Scripts/gliveview.md).
