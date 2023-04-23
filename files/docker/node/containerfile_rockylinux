@@ -1,0 +1,52 @@
+FROM rockylinux/rockylinux:8 as base
+
+ENV PATH=/root/.cabal/bin:/root/.ghcup/bin:/root/.local/bin:/root/bin:/usr/local/bin:/usr/bin:/usr/local/sbin:/usr/sbin
+
+RUN /bin/bash -c "dnf -y update \
+    && dnf -y install epel-release \
+    && dnf -y clean all \
+    && mkdir -pv /root/tmp /root/.{cabal,ghcup}/bin \
+    && cd /root/tmp \
+    && wget https://raw.githubusercontent.com/cardano-community/guild-operators/master/scripts/cnode-helper-scripts/guild-deploy.sh \
+    && export SUDO='N' \
+    && export UPDATE_CHECK='N' \
+    && export SKIP_DBSYNC_DOWNLOAD='Y' \
+    && chmod +x ./guild-deploy.sh \
+    &&  ./guild-deploy.sh -l -s pdcowx
+
+RUN curl -sL -H "Accept: application/vnd.github.everest-preview+json" -H "Content-Type: application/json" https://api.github.com/repos/cardano-community/guild-operators/commits | grep -v md | grep -A 2 guild-deploy.sh | grep sha | head -n 1 | cut -d "\"" -f 4 > ~/guild-latest.txt \
+    && echo "head -n 8 /home/guild/.scripts/banner.txt" >> ~/.bashrc \
+    && echo "grep MENU -A 6 /home/guild/.scripts/banner.txt | grep -v MENU" >> ~/.bashrc \
+    && echo "alias env=/usr/bin/env" >> ~/.bashrc \
+    && echo "alias cntools=$CNODE_HOME/scripts/cntools.sh" >> ~/.bashrc \
+    && echo "alias gLiveView=$CNODE_HOME/scripts/gLiveView.sh" >> ~/.bashrc \
+    && echo "export PATH=/opt/cardano/cnode/scripts:/bin:/sbin:/usr/bin:/usr/sbin:/usr/local/bin:/home/guild/.local/bin"  >> ~/.bashrc 
+
+RUN cd /usr/bin \
+    && wget http://www.vdberg.org/~richard/tcpping \
+    && chmod 755 tcpping \
+    && adduser --disabled-password --gecos '' guild \
+    && echo '%sudo ALL=(ALL) NOPASSWD:ALL' >> /etc/sudoers \
+    && adduser guild sudo 
+
+ENV \
+    ENV=/etc/profile \
+    LC_ALL=C.UTF-8 \
+    LANG=C.UTF-8 \
+    LANGUAGE=C.UTF-8 \
+    CNODE_HOME=/opt/cardano/cnode \
+    LD_LIBRARY_PATH="/usr/local/lib:$LD_LIBRARY_PATH" \
+    PKG_CONFIG_PATH="/usr/local/lib/pkgconfig:$PKG_CONFIG_PATH" \
+    PATH=/root/.cabal/bin:/root/.ghcup/bin:/root/.local/bin:/root/bin:/usr/local/bin:/usr/bin:/usr/local/sbin:/usr/sbin
+
+RUN sed -i 's/^#CONFIG=/CONFIG=/' /opt/cardano/cnode/scripts/env \
+    && sed -i 's/^#SOCKET=/SOCKET=/' /opt/cardano/cnode/scripts/env \
+    && sed -i 's/^#TOPOLOGY=/TOPOLOGY=/' /opt/cardano/cnode/scripts/env \
+    && sed -i 's/^#LOG_DIR=/LOG_DIR=/' /opt/cardano/cnode/scripts/env \
+    && sed -i 's/^#DB_DIR=/DB_DIR=/' /opt/cardano/cnode/scripts/env \
+    && sed -i 's/^#EKG_HOST=/EKG_HOST=/' /opt/cardano/cnode/scripts/env \
+    && sed -i 's/^#EKG_PORT=/EKG_PORT=/' /opt/cardano/cnode/scripts/env \
+    && sed -i 's/^#EKG_TIMEOUT=/EKG_TIMEOUT=/' /opt/cardano/cnode/scripts/env \
+    && sed -i 's/^#CURL_TIMEOUT=/CURL_TIMEOUT=/' /opt/cardano/cnode/scripts/env \
+    && sed -i 's/^#BLOCKLOG_DIR=/BLOCKLOG_DIR=/' /opt/cardano/cnode/scripts/env \
+    && sed -i 's%^#BLOCKLOG_TZ=\"UTC\"%BLOCKLOG_TZ=\"America/Los_Angeles\"%' /opt/cardano/cnode/scripts/env"
