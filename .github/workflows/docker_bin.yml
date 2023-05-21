@@ -44,6 +44,7 @@ jobs:
         docker tag ${{ env.REGISTRY }}/${{ secrets.DOCKER_USER }}/cardano-node:latest ${{ secrets.DOCKER_USER }}/cardano-node:${{ env.CNVERSION }}
         docker push ${{ env.REGISTRY }}/${{ secrets.DOCKER_USER }}/cardano-node:${{ env.CNVERSION }}
     - name: Add summary details
+      if: always()
       run: |
         echo "## Summary Details" >> $GITHUB_SUMMARY
         echo "* Docker Image: ${{ env.REGISTRY }}/${{ secrets.DOCKER_USER }}/cardano-node:${{ env.CNVERSION }}" >> $GITHUB_SUMMARY

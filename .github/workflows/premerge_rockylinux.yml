@@ -65,6 +65,7 @@ jobs:
           --build-arg G_ACCOUNT=${{ env.G_ACCOUNT }} \
           --tag ${{ env.REGISTRY }}/${{ env.G_ACCOUNT }}/pre-merge-rockylinux:cabal-l_${{ env.COMMIT }}
     - name: Add summary details
+      if: always()
       run: |
         echo "## Summary Details" >> $GITHUB_SUMMARY
         echo "* Docker Image: ${{ env.REGISTRY }}/${{ secrets.DOCKER_USER }}/cardano-node:$CNVERSION" >> $GITHUB_SUMMARY
