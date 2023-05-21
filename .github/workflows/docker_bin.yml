@@ -18,7 +18,7 @@ jobs:
         docker login -u ${{ secrets.DOCKER_USER }} -p ${{ secrets.DOCKER_PASSWORD }}
     - name: Compiling new node software suite
       run: |
-        export G_ACCOUNT=${GITHUB_REPOSITORY_OWNER} \
+        export G_ACCOUNT=${GITHUB_REPOSITORY_OWNER}
         DOCKER_BUILDKIT=1 docker build . --file files/docker/node/dockerfile_bin --compress --build-arg G_ACCOUNT --tag ${{ env.REGISTRY }}/${{ secrets.DOCKER_USER }}/cardano-node:latest
         # Workaround to provide additional free space for builds.
         #   https://github.com/actions/virtual-environments/issues/2840
