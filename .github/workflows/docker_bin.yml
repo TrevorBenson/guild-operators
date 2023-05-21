@@ -24,7 +24,7 @@ jobs:
       run: |
         DOCKER_BUILDKIT=1 docker build . \
           --file files/docker/node/dockerfile_bin \
-          --compress 
+          --compress \
           --build-arg G_ACCOUNT=${{ env.G_ACCOUNT }} \
           --tag ${{ env.REGISTRY }}/${{ secrets.DOCKER_USER }}/cardano-node:latest
         # Workaround to provide additional free space for builds.
