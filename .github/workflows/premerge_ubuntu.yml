@@ -74,8 +74,7 @@ jobs:
       if: always()
       run: |
         echo "## Summary Details" >> $GITHUB_STEP_SUMMARY
-        echo "* Docker Image: ${{ env.REGISTRY }}/${{ secrets.DOCKER_USER }}/cardano-node:$CNVERSION" >> $GITHUB_STEP_SUMMARY
+        echo "* Docker Image: ${{ env.REGISTRY }}/${{ env.G_ACCOUNT }}/pre-merge-ubuntu:guild-deploy-l_${{ env.COMMIT }}" >> $GITHUB_STEP_SUMMARY
         echo "* BRANCH: ${{ env.BRANCH }}" >> $GITHUB_STEP_SUMMARY
         echo "* G_ACCOUNT: ${{ env.G_ACCOUNT }}" >> $GITHUB_STEP_SUMMARY
         echo "* COMMIT: ${{ env.COMMIT }}" >> $GITHUB_STEP_SUMMARY
-

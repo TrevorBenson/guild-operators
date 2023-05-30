@@ -50,14 +50,8 @@ jobs:
         echo "Premerge testing ${{ env.G_ACCOUNT }}/guild-operators/${BRANCH} for commit ${COMMIT}"
     - name: Testing guild-deploy.sh (IO fork of libsodium)
       run: |
-        docker build . \
-          --file files/tests/pre-merge/debian-guild-deploy.sh-l.containerfile \
-          --compress \
-          --build-arg BRANCH=${{ env.BRANCH }} \
-          --build-arg COMMIT=${{ env.COMMIT }} \
-          --build-arg G_ACCOUNT=${{ env.G_ACCOUNT }} \
-          --tag ${{ env.REGISTRY }}/${{ env.G_ACCOUNT }}/pre-merge-debian:guild-deploy-l_${{ env.COMMIT }}
-    - name: Push pre-merge-debian:guild-deploy-l_${{ env.COMMIT }}
+        docker build . --file files/tests/pre-merge/debian-guild-deploy.sh-l.containerfile --compress --build-arg BRANCH --build-arg COMMIT --build-arg G_ACCOUNT --tag ghcr.io/${G_ACCOUNT}/pre-merge-debian:guild-deploy-l_${COMMIT}
+    - name: Push pre-merge-debian:guild-deploy-l_${COMMIT}
       run: |
         docker push \
           ${{ env.REGISTRY }}/${{ env.G_ACCOUNT }}/pre-merge-debian:guild-deploy-l_${{ env.COMMIT }}
@@ -73,8 +67,7 @@ jobs:
       if: always()
       run: |
         echo "## Summary Details" >> $GITHUB_STEP_SUMMARY
-        echo "* Docker Image: ${{ env.REGISTRY }}/${{ secrets.DOCKER_USER }}/cardano-node:$CNVERSION" >> $GITHUB_STEP_SUMMARY
+        echo "* Docker Image: ${{ env.REGISTRY }}/${{ env.G_ACCOUNT }}/pre-merge-debian:guild-deploy-l_${{ env.COMMIT }}" >> $GITHUB_STEP_SUMMARY
         echo "* BRANCH: ${{ env.BRANCH }}" >> $GITHUB_STEP_SUMMARY
         echo "* G_ACCOUNT: ${{ env.G_ACCOUNT }}" >> $GITHUB_STEP_SUMMARY
         echo "* COMMIT: ${{ env.COMMIT }}" >> $GITHUB_STEP_SUMMARY
-

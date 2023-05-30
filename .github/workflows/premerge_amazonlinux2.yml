@@ -44,7 +44,7 @@ jobs:
         echo "G_ACCOUNT=${GITHUB_REPOSITORY_OWNER,,}" >> $GITHUB_ENV
         echo "BRANCH=${GITHUB_HEAD_REF}" >> $GITHUB_ENV
         echo "COMMIT=$(git rev-parse --short $GITHUB_SHA)" >> $GITHUB_ENV
-    - name: Workflow Summary
+    - name: Workflow Banner
       shell: bash
       run: |
         echo "Premerge testing ${{ env.G_ACCOUNT }}/guild-operators/${BRANCH} for commit ${COMMIT}"
@@ -73,7 +73,7 @@ jobs:
       if: always()
       run: |
         echo "## Summary Details" >> $GITHUB_STEP_SUMMARY
-        echo "* Docker Image: ${{ env.REGISTRY }}/${{ secrets.DOCKER_USER }}/cardano-node:$CNVERSION" >> $GITHUB_STEP_SUMMARY
+        echo "* Docker Image: ${{ env.REGISTRY }}/${{ env.G_ACCOUNT }}/pre-merge-amazonlinux2:guild-deploy-l_${{ env.COMMIT }}" >> $GITHUB_STEP_SUMMARY
         echo "* BRANCH: ${{ env.BRANCH }}" >> $GITHUB_STEP_SUMMARY
         echo "* G_ACCOUNT: ${{ env.G_ACCOUNT }}" >> $GITHUB_STEP_SUMMARY
         echo "* COMMIT: ${{ env.COMMIT }}" >> $GITHUB_STEP_SUMMARY
