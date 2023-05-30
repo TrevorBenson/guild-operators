@@ -11,6 +11,8 @@ on:
 
 jobs:
   guild-deploy-and-build-debian:
+    env:
+      REGISTRY: ghcr.io
     runs-on: ubuntu-latest
     if: github.event.pull_request.draft == false
     steps:
@@ -54,4 +56,3 @@ jobs:
     - name: Testing cabal-build-all.sh (IO fork of libsodium)
       run: |
         docker build . --file files/tests/pre-merge/debian-cabal-l.containerfile --compress --build-arg BRANCH --build-arg COMMIT --tag ghcr.io/cardano-community/pre-merge-debian:cabal-l_${COMMIT}
-

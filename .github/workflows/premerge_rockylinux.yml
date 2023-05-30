@@ -11,6 +11,8 @@ on:
 
 jobs:
   guild-deploy-and-build-rockylinux:
+    env:
+      REGISTRY: ghcr.io
     runs-on: ubuntu-latest
     if: github.event.pull_request.draft == false
     steps:
