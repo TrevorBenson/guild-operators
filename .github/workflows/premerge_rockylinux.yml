@@ -36,39 +36,23 @@ jobs:
         registry: ghcr.io
         username: ${{ github.actor }}
         password: ${{ secrets.GITHUB_TOKEN }}
-    - uses: actions/checkout@v3
-    - name: Define BRANCH, COMMIT and G_ACCOUNT in environment
+    - uses: actions/checkout@v2
+    - name: Extract environment variables from PR
+      shell: bash
       run: |
+        echo "G_ACCOUNT=${GITHUB_REPOSITORY_OWNER}" >> $GITHUB_ENV
         echo "BRANCH=${GITHUB_HEAD_REF}" >> $GITHUB_ENV
-        echo "G_ACCOUNT=${GITHUB_REPOSITORY_OWNER,,}" >> $GITHUB_ENV
-        echo "COMMIT=$(git rev-parse --short "$GITHUB_SHA")" >> $GITHUB_ENV
+        echo "COMMIT=$(git rev-parse --short $GITHUB_SHA)" >> $GITHUB_ENV
+    - name: Workflow Summary
+      shell: bash
+      run: |
+        echo "Premerge testing ${G_ACCOUNT}/guild-operators/${BRANCH} for commit ${COMMIT}"
     - name: Testing guild-deploy.sh (IO fork of libsodium)
       run: |
-        docker build . \
-          --file files/tests/pre-merge/rockylinux-guild-deploy.sh-l.containerfile \
-          --compress \
-          --build-arg BRANCH=${{ env.BRANCH }} \
-          --build-arg COMMIT=${{ env.COMMIT }} \
-          --build-arg G_ACCOUNT=${{ env.G_ACCOUNT }} \
-          --tag ${{ env.REGISTRY }}/${{ env.G_ACCOUNT }}/pre-merge-rockylinux:guild-deploy-l_${{ env.COMMIT }}
-    - name: Push pre-merge-rockylinux:guild-deploy-l_${{ env.COMMIT }}
+        docker build . --file files/tests/pre-merge/rockylinux-guild-deploy.sh-l.containerfile --compress --build-arg BRANCH --build-arg COMMIT --build-arg G_ACCOUNT --tag ghcr.io/${G_ACCOUNT}/pre-merge-rockylinux:guild-deploy-l_${COMMIT}
+    - name: Push pre-merge-rockylinux:guild-deploy-l_${COMMIT}
       run: |
-        docker push ${{ env.REGISTRY }}/${{ env.G_ACCOUNT }}/pre-merge-rockylinux:guild-deploy-l_${{ env.COMMIT }}
+        docker push ghcr.io/${G_ACCOUNT}/pre-merge-rockylinux:guild-deploy-l_${COMMIT}
     - name: Testing cabal-build-all.sh (IO fork of libsodium)
       run: |
-        echo "Working from PR Branch ${{ env.G_ACCOUNT }}/guild-operators/${{ env.BRANCH }} on Commit ${{ env.COMMIT }}"
-        docker build . \
-          --file files/tests/pre-merge/rockylinux-cabal-l.containerfile \
-          --compress \
-          --build-arg BRANCH=${{ env.BRANCH }} \
-          --build-arg COMMIT=${{ env.COMMIT }} \
-          --build-arg G_ACCOUNT=${{ env.G_ACCOUNT }} \
-          --tag ${{ env.REGISTRY }}/${{ env.G_ACCOUNT }}/pre-merge-rockylinux:cabal-l_${{ env.COMMIT }}
-    - name: Add summary details
-      if: always()
-      run: |
-        echo "## Summary Details" >> $GITHUB_STEP_SUMMARY
-        echo "* Docker Image: ${{ env.REGISTRY }}/${{ secrets.DOCKER_USER }}/cardano-node:$CNVERSION" >> $GITHUB_STEP_SUMMARY
-        echo "* BRANCH: ${{ env.BRANCH }}" >> $GITHUB_STEP_SUMMARY
-        echo "* G_ACCOUNT: ${GITHUB_REPOSITORY_OWNER}" >> $GITHUB_STEP_SUMMARY
-        echo "* COMMIT: ${{ env.COMMIT }}" >> $GITHUB_STEP_SUMMARY
+        docker build . --file files/tests/pre-merge/rockylinux-cabal-l.containerfile --compress --build-arg BRANCH --build-arg COMMIT --tag ghcr.io/${G_ACCOUNT}/pre-merge-rockylinux:cabal-l_${COMMIT}
