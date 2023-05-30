@@ -33,41 +33,41 @@ jobs:
     - name: Login to GitHub Container Registry
       uses: docker/login-action@v2
       with:
-        registry: ghcr.io
+        registry: ${{ env.REGISTRY }}
         username: ${{ github.actor }}
         password: ${{ secrets.GITHUB_TOKEN }}
-    - uses: actions/checkout@v2
+    - name: Checkout
+      uses: actions/checkout@v3
     - name: Extract environment variables from PR
       shell: bash
       run: |
-        echo "G_ACCOUNT=${GITHUB_REPOSITORY_OWNER}" >> $GITHUB_ENV
+        echo "G_ACCOUNT=${GITHUB_REPOSITORY_OWNER,,}" >> $GITHUB_ENV
         echo "BRANCH=${GITHUB_HEAD_REF}" >> $GITHUB_ENV
         echo "COMMIT=$(git rev-parse --short $GITHUB_SHA)" >> $GITHUB_ENV
     - name: Workflow Summary
       shell: bash
       run: |
-        echo "Premerge testing ${G_ACCOUNT}/guild-operators/${BRANCH} for commit ${COMMIT}"
+        echo "Premerge testing ${{ env.G_ACCOUNT }}/guild-operators/${BRANCH} for commit ${COMMIT}"
     - name: Testing guild-deploy.sh (IO fork of libsodium)
       run: |
         docker build . --file files/tests/pre-merge/debian-guild-deploy.sh-l.containerfile --compress --build-arg BRANCH --build-arg COMMIT --build-arg G_ACCOUNT --tag ghcr.io/${G_ACCOUNT}/pre-merge-debian:guild-deploy-l_${COMMIT}
     - name: Push pre-merge-debian:guild-deploy-l_${COMMIT}
       run: |
-        docker push ghcr.io/${G_ACCOUNT}/pre-merge-debian:guild-deploy-l_${COMMIT}
+        docker push \
+          ${{ env.REGISTRY }}/${{ env.G_ACCOUNT }}/pre-merge-debian:guild-deploy-l_${{ env.COMMIT }}
     - name: Testing cabal-build-all.sh (IO fork of libsodium)
       run: |
-        echo "Working from PR Branch ${{ env.G_ACCOUNT }}/guild-operators/${{ env.BRANCH }} on Commit ${{ env.COMMIT }}"
         docker build . \
-        --file files/tests/pre-merge/debian-cabal-l.containerfile \
-        --compress \
-        --build-arg BRANCH=${{ env.BRANCH }} \
-        --build-arg COMMIT=${{ env.COMMIT }} \
-        --build-arg G_ACCOUNT=${{ env.G_ACCOUNT }} \
-        --tag ${{ env.REGISTRY }}/${{ env.G_ACCOUNT }}/pre-merge-debian:cabal-l_${{ env.COMMIT }}
+          --file files/tests/pre-merge/debian-cabal-l.containerfile \
+          --compress \
+          --build-arg BRANCH=${{ env.BRANCH }} \
+          --build-arg COMMIT=${{ env.COMMIT }} \
+          --tag ${{ env.REGISTRY }}/${{ env.G_ACCOUNT }}/pre-merge-debian:cabal-l_${{ env.COMMIT }}
     - name: Add summary details
       if: always()
       run: |
         echo "## Summary Details" >> $GITHUB_STEP_SUMMARY
-        echo "* Docker Image: ${{ env.REGISTRY }}/${{ secrets.DOCKER_USER }}/cardano-node:$${{ env.COMMIT }}" >> $GITHUB_STEP_SUMMARY
+        echo "* Docker Image: ${{ env.REGISTRY }}/${{ env.G_ACCOUNT }}/pre-merge-debian:guild-deploy-l_${{ env.COMMIT }}" >> $GITHUB_STEP_SUMMARY
         echo "* BRANCH: ${{ env.BRANCH }}" >> $GITHUB_STEP_SUMMARY
-        echo "* G_ACCOUNT: ${GITHUB_REPOSITORY_OWNER}" >> $GITHUB_STEP_SUMMARY
+        echo "* G_ACCOUNT: ${{ env.G_ACCOUNT }}" >> $GITHUB_STEP_SUMMARY
         echo "* COMMIT: ${{ env.COMMIT }}" >> $GITHUB_STEP_SUMMARY
