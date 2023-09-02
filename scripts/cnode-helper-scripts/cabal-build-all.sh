@@ -111,3 +111,4 @@ grep "^Linking" /tmp/build.log | grep -Ev 'test|golden|demo|chairman|locli|ledge
     echo "Copying $act_bin to ${HOME}/.local/bin/"
     cp -f "$act_bin_path" "${HOME}/.local/bin/"
 done
+
