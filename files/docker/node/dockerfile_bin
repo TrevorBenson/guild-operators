@@ -46,6 +46,7 @@ RUN set -x && apt update \
     && wget https://raw.githubusercontent.com/${G_ACCOUNT}/guild-operators/${GUILD_DEPLOY_BRANCH}/scripts/cnode-helper-scripts/guild-deploy.sh \
     && export SUDO='N' \
     && export SKIP_DBSYNC_DOWNLOAD='Y' \
+    && export G_ACCOUNT=${G_ACCOUNT} \
     && chmod +x ./guild-deploy.sh &&  ./guild-deploy.sh -b ${GUILD_DEPLOY_BRANCH} -s p \
     && ls /opt/ \
     && mkdir -p $CNODE_HOME/priv/files \
@@ -58,6 +59,7 @@ RUN set -x && apt update \
 
 RUN set -x && export SUDO='N' \
     && export SKIP_DBSYNC_DOWNLOAD='Y' \
+    && export G_ACCOUNT=${G_ACCOUNT} \
     && ./guild-deploy.sh -b ${GUILD_DEPLOY_BRANCH} -s dcmowx \
     && cd /usr/bin \
     && wget http://www.vdberg.org/~richard/tcpping \
