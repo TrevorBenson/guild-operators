@@ -5,8 +5,8 @@ STOPSIGNAL SIGINT
 
 LABEL desc="Cardano Node by Guild's Operators"
 ARG DEBIAN_FRONTEND=noninteractive
-ARG G_ACCOUNT
-ARG GUILD_DEPLOY_BRANCH
+ARG G_ACCOUNT=cardano-community
+ARG GUILD_DEPLOY_BRANCH=master
 
 USER root
 WORKDIR /
