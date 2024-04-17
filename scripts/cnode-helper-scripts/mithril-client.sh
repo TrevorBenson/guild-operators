@@ -15,9 +15,16 @@
 # Do NOT modify code below           #
 ######################################
 
+
+
 #####################
 # Functions         #
 #####################
+
+#UPDATE TEST MARKER
+update_test() {
+  echo "This was an update of your regularly scheduled program"
+}
 
 usage() {
   cat <<-EOF
