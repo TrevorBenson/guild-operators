@@ -6,6 +6,13 @@
 # Do NOT modify code below           #
 ######################################
 
+
+#UPDATE TEST MARKER
+update_test() {
+  echo "This was an update of your regularly scheduled program"
+}
+
+
 . "$(dirname $0)"/env offline
 
 U_ID=$(id -u)
