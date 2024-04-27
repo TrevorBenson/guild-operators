@@ -1,0 +1,51 @@
+name: Get Mithril pre-release version
+on:
+  workflow_dispatch:
+  push:
+    branches:
+      - alpha
+  schedule:
+    - cron:  '0 */8 * * *'
+
+jobs:
+  get-version:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v2
+        with:
+          fetch-depth: 0
+          ref: preview
+      - name: Configure Git
+        run: |
+          git config --global user.name "${GITHUB_ACTOR}"
+          git config --global user.email "${GITHUB_ACTOR}@users.noreply.github.com"
+          echo "GitHub Actor: ${GITHUB_ACTOR}" >> "$GITHUB_STEP_SUMMARY"
+          echo "GitHub Email: ${GITHUB_ACTOR}@users.noreply.github.com" >> "$GITHUB_STEP_SUMMARY"
+      - name: Fetch Mithril release and pre-release versions
+        run: |
+          mithril_release="$(curl -s https://api.github.com/repos/input-output-hk/mithril/releases/latest | jq -r '.tag_name')"
+          mithril_prerelease="$(curl -s https://api.github.com/repos/input-output-hk/mithril/releases | jq -r '.[] | select(.prerelease == true) | select(.tag_name | endswith("-pre")) | .tag_name' | head -n 1)"
+          if [[ "${mithril_release}-pre" == "${mithril_prerelease}" ]]; then
+            echo "${mithril_release}" > files/docker/node/release-versions/mithril-prerelease.txt
+            echo "PRERELEASE_VERSION=${mithril_release}" >> $GITHUB_ENV
+            echo "Pre-release version: ${mithril_release}" >> $GITHUB_STEP_SUMMARY
+            echo "Pre-release == Release: True" >> $GITHUB_STEP_SUMMARY
+          else
+            echo "${mithril_prerelease}" > files/docker/node/release-versions/mithril-prerelease.txt
+            echo "PRERELEASE_VERSION=${mithril_prerelease}" >> $GITHUB_ENV
+            echo "Pre-release version: ${mithril_prerelease}" >> $GITHUB_STEP_SUMMARY
+            echo "Pre-release == Release: False" >> $GITHUB_STEP_SUMMARY
+          fi
+      - name: Check for changes
+        id: git-check
+        run: |
+          export MODIFIED=$([ -z "`git status --porcelain`" ] && echo "false" || echo "true")
+          echo "MODIFIED=${MODIFIED}" >> "$GITHUB_OUTPUT"
+          echo "Repository Modified: ${MODIFIED}" >> "$GITHUB_STEP_SUMMARY"  
+      - name: Commit latest pre-release versions
+        if: steps.git-check.outputs.MODIFIED == 'true'
+        run: |
+          echo "Modified files: $(git diff --name-only $(jq -r '.sha' "$GITHUB_OUTPUT"))" >> "$GITHUB_STEP_SUMMARY"
+          git add files/docker/node/release-versions/mithril-prerelease.txt
+          git commit -am "New mithril pre-release versions: pre-release ${PRERELEASE_VERSION}"
+          git push
