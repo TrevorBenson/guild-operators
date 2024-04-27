@@ -4,6 +4,14 @@ trap 'killall -s SIGINT cardano-node' SIGINT SIGTERM
 # "docker run --init" to enable the docker init proxy
 # To manually test: docker kill -s SIGTERM container
 
+declare -A release_map=(
+  ["mainnet"]="release"
+  ["preprod"]="release"
+  ["preview"]="pre-release"
+  ["guild"]="release"
+  ["sanchonet"]="testing"
+)
+
 head -n 8 ~/.scripts/banner.txt
 
 . ~/.bashrc > /dev/null 2>&1
@@ -52,8 +60,12 @@ if [[ -n "${NETWORK}" ]] ; then
   else
     load_configs
   fi
+  if [[ -v release_map[$NETWORK] ]] ; then
+    ln -sf "${HOME}/.local/bin/mithril/${release_map[$NETWORK]}/mithril-signer" "${HOME}"/.local/bin/mithril-signer
+    ln -sf "${HOME}/.local/bin/mithril/${release_map[$NETWORK]}/mithril-client" "${HOME}"/.local/bin/mithril-client
+  fi
 else
-  echo "Please set a NETWORK environment variable to one of: mainnet / preview / preprod / guild-mainnet / guild"
+  echo "Please set a NETWORK environment variable to one of: mainnet / preview / preprod / guild-mainnet / guild / sanchonet"
   echo "mount a '$CNODE_HOME/priv/files' volume containing: mainnet-config.json, mainnet-shelley-genesis.json, mainnet-byron-genesis.json, and mainnet-topology.json "
   echo "for active nodes set POOL_DIR environment variable where op.cert, hot.skey and vrf.skey files reside. (usually under '${CNODE_HOME}/priv/pool/$POOL_NAME' ) "
   echo "or just set POOL_NAME environment variable (for default path). "

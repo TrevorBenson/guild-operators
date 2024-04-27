@@ -109,7 +109,7 @@ set_defaults() {
   [[ "${SUDO}" = 'Y' && $(id -u) -eq 0 ]] && err_exit "Please run as non-root user."
   CNODE_HOME="${CNODE_PATH}/${CNODE_NAME}"
   CNODE_VNAME=$(echo "$CNODE_NAME" | awk '{print toupper($0)}')
-  CARDANO_NODE_VERSION="8.9.2"
+  [[ -z ${CARDANO_NODE_VERSION} ]] && CARDANO_NODE_VERSION="8.9.2"
   REPO="https://github.com/${G_ACCOUNT}/guild-operators"
   REPO_RAW="https://raw.githubusercontent.com/${G_ACCOUNT}/guild-operators"
   URL_RAW="${REPO_RAW}/${BRANCH}"
@@ -371,7 +371,7 @@ download_cnodebins() {
   pushd "${HOME}"/tmp >/dev/null || err_exit
   echo -e "\n  Downloading Cardano Node archive created from GitHub.."
   rm -f cardano-node cardano-address
-  curl -m 200 -sfL https://github.com/intersectmbo/cardano-node/releases/download/${CARDANO_NODE_VERSION}/cardano-node-${CARDANO_NODE_VERSION}-linux.tar.gz -o cnode.tar.gz || err_exit " Could not download cardano-node release ${CARDANO_NODE_VERSION} from GitHub!"
+  curl -m 200 -sfL https://github.com/intersectmbo/cardano-node/releases/download/${CARDANO_NODE_VERSION}/cardano-node-${CARDANO_NODE_VERSION%-pre}-linux.tar.gz -o cnode.tar.gz || err_exit " Could not download cardano-node release ${CARDANO_NODE_VERSION} from GitHub!"
   tar zxf cnode.tar.gz --strip-components 2 ./bin/cardano-node ./bin/cardano-cli ./bin/cardano-submit-api ./bin/bech32 &>/dev/null
   rm -f cnode.tar.gz
   [[ -f cardano-node ]] || err_exit " cardano-node archive downloaded but binary (cardano-node) not found after extracting package!"
@@ -537,19 +537,50 @@ download_cardanosigner() {
 }
 
 # Download pre-built mithril-signer binary
+download_mithril_version() {
+  local version=$1
+  local target_dir=$2
+
+  echo -e "\n  Downloading Mithril Signer/Client ${version}..."
+  rm -f mithril-signer mithril-client
+
+  if [[ "${version}" == "unstable" ]]; then
+    local download_url
+    download_url=$(curl -s https://api.github.com/repos/input-output-hk/mithril/releases | jq -r '.[] | select(.prerelease == true) | select(.tag_name == "unstable") | .assets[] | select(.name | test("mithril-unstable-.*-linux-x64.tar.gz")) | .browser_download_url' | head -n 1)
+    curl -m 200 -sfL "${download_url}" -o mithril.tar.gz || err_exit " Could not download mithril's ${version} archive from IO github!"
+  else
+    curl -m 200 -sfL https://github.com/input-output-hk/mithril/releases/download/${version}/mithril-${version}-linux-x64.tar.gz -o mithril.tar.gz || err_exit " Could not download mithril's ${version} archive from IO github!"
+  fi
+
+  tar zxf mithril.tar.gz mithril-signer mithril-client &>/dev/null
+  rm -f mithril.tar.gz
+  [[ -f mithril-signer ]] || err_exit " mithril archive downloaded but binary (mithril-signer) not found after extracting package!"
+  [[ -f mithril-client ]] || err_exit " mithril archive downloaded but binary (mithril-client) not found after extracting package!"
+  mv -t "${target_dir}" mithril-signer mithril-client
+}
+
 download_mithril() {
-    echo -e "\nDownloading Mithril..."
-    pushd "${HOME}"/tmp >/dev/null || err_exit
-    mithril_release="$(curl -s https://api.github.com/repos/input-output-hk/mithril/releases/latest | jq -r '.tag_name')"
-    echo -e "\n  Downloading Mithril Signer/Client ${mithril_release}..."
-    rm -f mithril-signer mithril-client
-    curl -m 200 -sfL https://github.com/input-output-hk/mithril/releases/download/${mithril_release}/mithril-${mithril_release}-linux-x64.tar.gz -o mithril.tar.gz || err_exit " Could not download mithril's latest release archive from IO github!"
-    tar zxf mithril.tar.gz mithril-signer mithril-client &>/dev/null
-    rm -f mithril.tar.gz
-    [[ -f mithril-signer ]] || err_exit " mithril archive downloaded but binary (mithril-signer) not found after extracting package!"
-    [[ -f mithril-client ]] || err_exit " mithril archive downloaded but binary (mithril-client) not found after extracting package!"
-    mv -t "${HOME}"/.local/bin mithril-signer mithril-client
-    chmod +x "${HOME}"/.local/bin/*
+  echo -e "\nDownloading Mithril..."
+  # Create a directory for storing the release, pre-release and testing (unstable) builds
+  mkdir -p "${HOME}"/.local/bin/mithril/{release,pre-release,testing} -p 2>/dev/null
+  pushd "${HOME}"/tmp >/dev/null || err_exit
+  mithril_release="$(curl -s https://api.github.com/repos/input-output-hk/mithril/releases/latest | jq -r '.tag_name')"
+  # RELEASE
+  download_mithril_version "${mithril_release}" "${HOME}"/.local/bin/mithril/release
+  # PRE-RELEASE
+  mithril_prerelease="$(curl -s https://api.github.com/repos/input-output-hk/mithril/releases | jq -r '.[] | select(.prerelease == true) | select(.tag_name | endswith("-pre")) | .tag_name' | head -n 1)"
+  
+  if [[ "${mithril_release}-pre" == "${mithril_prerelease}" ]]; then
+    echo -e "\nCopying Mithril Signer/Client release to pre-release..."
+    cp "${HOME}"/.local/bin/mithril/release/* "${HOME}"/.local/bin/mithril/pre-release/
+  else
+    download_mithril_version "${mithril_prerelease}" "${HOME}"/.local/bin/mithril/pre-release
+  fi
+  # TESTING
+  mithril_testing="$(curl -s https://api.github.com/repos/input-output-hk/mithril/releases | jq -r '.[] | select(.prerelease == true) | select(.tag_name == "unstable") | .tag_name')"
+  download_mithril_version "${mithril_testing}" "${HOME}"/.local/bin/mithril/testing
+  # MAKE ALL BUILDS EXECUTABLE
+  chmod +x "${HOME}"/.local/bin/mithril/{release,pre-release,testing}/*
 }
 
 # Create folder structure and set up permissions/ownerships
