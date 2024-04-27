@@ -1,0 +1,38 @@
+name: Rebase preview branch
+on:
+  workflow_dispatch:
+  push:
+    branches:
+      - alpha
+  
+jobs:
+  rebase:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v2
+        with:
+          ref: preview
+          fetch-depth: 0
+      - name: Configure Git
+        run: |
+          git config --global user.name "${GITHUB_ACTOR}"
+          git config --global user.email "${GITHUB_ACTOR}@users.noreply.github.com"
+          echo "GitHub Actor: ${GITHUB_ACTOR}" >> "$GITHUB_STEP_SUMMARY"
+          echo "GitHub Email: ${GITHUB_ACTOR}@users.noreply.github.com" >> "$GITHUB_STEP_SUMMARY"
+      - name: Fetch alpha
+        run: |
+          git fetch origin alpha
+      - name: Get current SHA
+        run: |
+          echo "sha=$(git rev-parse HEAD)" >> "$GITHUB_OUTPUT"
+      - name: Rebase on alpha
+        run: |
+          git rebase origin/alpha
+      - name: Check for changes
+        id: git-check
+        run: |
+          export MODIFIED=$([ "$(git rev-parse HEAD)" != "$(jq -r '.sha' "$GITHUB_OUTPUT")" ] && echo "true" || echo "false")
+          echo "MODIFIED=${MODIFIED}" >> "$GITHUB_OUTPUT"
+      - name: Push changes
+        if: steps.git-check.outputs.MODIFIED == 'true'
+        run: git push --force-with-lease
