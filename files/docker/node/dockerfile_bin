@@ -7,6 +7,7 @@ LABEL desc="Cardano Node by Guild's Operators"
 ARG DEBIAN_FRONTEND=noninteractive
 ARG G_ACCOUNT=cardano-community
 ARG GUILD_DEPLOY_BRANCH=master
+ARG CARDANO_NODE_VERSION
 
 USER root
 WORKDIR /
@@ -60,6 +61,7 @@ RUN set -x && apt update \
 RUN set -x && export SUDO='N' \
     && export SKIP_DBSYNC_DOWNLOAD='Y' \
     && export G_ACCOUNT=${G_ACCOUNT} \
+    && export CARDANO_NODE_VERSION=${CARDANO_NODE_VERSION} \
     && ./guild-deploy.sh -b ${GUILD_DEPLOY_BRANCH} -s dcmowx \
     && cd /usr/bin \
     && wget http://www.vdberg.org/~richard/tcpping \
