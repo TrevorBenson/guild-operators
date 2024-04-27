@@ -19,6 +19,7 @@ jobs:
           echo "| GitHub Actor | ${GITHUB_ACTOR} |" >> $GITHUB_STEP_SUMMARY
           echo "| GitHub Email | ${GITHUB_ACTOR}@users.noreply.github.com |" >> $GITHUB_STEP_SUMMARY
   get-node-prerelease:
+    needs: start-summary
     runs-on: ubuntu-latest
     steps:
       - name: Set summary details
@@ -54,6 +55,7 @@ jobs:
           git commit -am "New mithril pre-release versions: pre-release ${PRERELEASE_VERSION}"
           git push
   get-mithril-prerelease:
+    needs: start-summary
     runs-on: ubuntu-latest
     steps:
       - name: Set summary details
@@ -99,6 +101,7 @@ jobs:
           git commit -am "New mithril pre-release versions: pre-release ${PRERELEASE_VERSION}"
           git push
   get-mithril-unstable:
+    needs: start-summary
     runs-on: ubuntu-latest
     steps:
       - name: Set summary details
