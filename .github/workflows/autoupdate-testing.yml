@@ -1,0 +1,212 @@
+name: Autoupdate testing branches
+on:
+  workflow_dispatch:
+  push:
+    branches:
+      - alpha
+  schedule:
+    - cron:  '0 */8 * * *'
+
+jobs:
+  start-summary:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Set summary details
+        run: |
+          echo "## Autoupdate Testing Branches Summary Details" >> $GITHUB_STEP_SUMMARY
+          echo "| Name | Value |" >> $GITHUB_STEP_SUMMARY
+          echo "| ---- | ----- |" >> $GITHUB_STEP_SUMMARY
+          echo "| GitHub Actor | ${GITHUB_ACTOR} |" >> $GITHUB_STEP_SUMMARY
+          echo "| GitHub Email | ${GITHUB_ACTOR}@users.noreply.github.com" >> $GITHUB_STEP_SUMMARY
+  get-node-prerelease:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Set summary details
+        run: |
+          echo "## Get Node Pre-Release" >> $GITHUB_STEP_SUMMARY
+          echo "| Name | Value |" >> $GITHUB_STEP_SUMMARY
+          echo "| ---- | ----- |" >> $GITHUB_STEP_SUMMARY
+      - uses: actions/checkout@v2
+        with:
+          fetch-depth: 0
+          ref: preview
+      - name: Configure Git
+        run: |
+          git config --global user.name "${GITHUB_ACTOR}"
+          git config --global user.email "${GITHUB_ACTOR}@users.noreply.github.com"
+      - name: Fetch node pre-release version
+        run: |
+          curl -sL https://api.github.com/repos/IntersectMBO/cardano-node/releases | jq -r '.[] | select(.prerelease == true) | .tag_name' | head -1 > files/docker/node/release-versions/cardano-node-prerelease.txt
+      - name: Assigns pre-release version
+        run: |
+          VERSION=$(cat files/docker/node/release-versions/cardano-node-prerelease.txt)
+      - name: Check for changes
+        id: git-check
+        run: |
+          export MODIFIED=$([ -z "`git status --porcelain`" ] && echo "false" || echo "true")
+          echo "MODIFIED=${MODIFIED}" >> "$GITHUB_OUTPUT"
+          echo "| Repository Modified | ${MODIFIED} |" >> "$GITHUB_STEP_SUMMARY"  
+      - name: Commit latest pre-release versions
+        if: steps.git-check.outputs.MODIFIED == 'true'
+        run: |
+          echo "| Modified files | $(git diff --name-only $(jq -r '.sha' "$GITHUB_OUTPUT")) |" >> "$GITHUB_STEP_SUMMARY"
+          git add files/docker/node/release-versions/cardano-node-prerelease.txt
+          git commit -am "New mithril pre-release versions: pre-release ${PRERELEASE_VERSION}"
+          git push
+  get-mithril-prerelease:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Set summary details
+        run: |
+          echo "## Get Mithril Pre-Release" >> $GITHUB_STEP_SUMMARY
+          echo "| Name | Value |" >> $GITHUB_STEP_SUMMARY
+          echo "| ---- | ----- |" >> $GITHUB_STEP_SUMMARY
+      - uses: actions/checkout@v2
+        with:
+          fetch-depth: 0
+          ref: preview
+      - name: Configure Git
+        run: |
+          git config --global user.name "${GITHUB_ACTOR}"
+          git config --global user.email "${GITHUB_ACTOR}@users.noreply.github.com"
+      - name: Fetch Mithril release and pre-release versions
+        run: |
+          mithril_release="$(curl -s https://api.github.com/repos/input-output-hk/mithril/releases/latest | jq -r '.tag_name')"
+          mithril_prerelease="$(curl -s https://api.github.com/repos/input-output-hk/mithril/releases | jq -r '.[] | select(.prerelease == true) | select(.tag_name | endswith("-pre")) | .tag_name' | head -n 1)"
+          if [[ "${mithril_release}-pre" == "${mithril_prerelease}" ]]; then
+            echo "${mithril_release}" > files/docker/node/release-versions/mithril-prerelease.txt
+            PRERELEASE_VERSION=${mithril_release}
+            echo "PRERELEASE_VERSION=${PRERELEASE_VERSION}" >> $GITHUB_ENV
+            echo "| Pre-release == Release | True" >> $GITHUB_STEP_SUMMARY
+          else
+            echo "${mithril_prerelease}" > files/docker/node/release-versions/mithril-prerelease.txt
+            PRERELEASE_VERSION=${mithril_prerelease}
+            echo "PRERELEASE_VERSION=${PRERELEASE_VERSION}" >> $GITHUB_ENV
+            echo "| Pre-release == Release | False |" >> $GITHUB_STEP_SUMMARY
+          fi
+          echo "| Pre-release version | ${PRERELEASE_VERSION} |" >> $GITHUB_STEP_SUMMARY
+      - name: Check for changes
+        id: git-check
+        run: |
+          export MODIFIED=$([ -z "`git status --porcelain`" ] && echo "false" || echo "true")
+          echo "MODIFIED=${MODIFIED}" >> "$GITHUB_OUTPUT"
+          echo "| Repository Modified | ${MODIFIED} |" >> "$GITHUB_STEP_SUMMARY"  
+      - name: Commit latest pre-release versions
+        if: steps.git-check.outputs.MODIFIED == 'true'
+        run: |
+          echo "" Modified files | $(git diff --name-only $(jq -r '.sha' "$GITHUB_OUTPUT")) |" >> "$GITHUB_STEP_SUMMARY"
+          git add files/docker/node/release-versions/mithril-prerelease.txt
+          git commit -am "New mithril pre-release versions: pre-release ${PRERELEASE_VERSION}"
+          git push
+  get-mithril-unstable:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Set summary details
+        run: |
+          echo "## Get Mithril Unstable" >> $GITHUB_STEP_SUMMARY
+          echo "| Name | Value |" >> $GITHUB_STEP_SUMMARY
+          echo "| ---- | ----- |" >> $GITHUB_STEP_SUMMARY
+      - uses: actions/checkout@v2
+        with:
+          fetch-depth: 0
+          ref: sanchonet
+      - name: Configure Git
+        run: |
+          git config --global user.name "${GITHUB_ACTOR}"
+          git config --global user.email "${GITHUB_ACTOR}@users.noreply.github.com"
+      - name: Fetch Mithril unstable version
+        run: |
+          curl -sL https://api.github.com/repos/input-output-hk/mithril/releases | jq -r '.[] | select(.prerelease == true and .tag_name == "unstable") | .tag_name' | head -1 > files/docker/node/release-versions/mithril-unstable.txt
+      - name: Assign unstable version
+        run: |
+          export UNSTABLE_VERSION=$(cat files/docker/node/release-versions/mithril-unstable.txt)
+          echo "UNSTABLE_VERSION=${UNSTABLE_VERSION}" >> $GITHUB_ENV
+          echo "| Unstable version | ${UNSTABLE_VERSION} |" >> $GITHUB_STEP_SUMMARY
+      - name: Check for changes
+        id: git-check
+        run: |
+          export MODIFIED=$([ -z "`git status --porcelain`" ] && echo "false" || echo "true")
+          echo "MODIFIED=${MODIFIED}" >> "$GITHUB_OUTPUT"
+          echo "| Repository Modified | ${MODIFIED} |" >> "$GITHUB_STEP_SUMMARY"
+      - name: Commit latest unstable versions
+        if: steps.git-check.outputs.MODIFIED == 'true'
+        run: |
+          echo "| Modified files | $(git diff --name-only $(jq -r '.sha' "$GITHUB_OUTPUT")) |" >> "$GITHUB_STEP_SUMMARY"
+          git add files/docker/node/release-versions/mithril-unstable.txt
+          git commit -am "New mithril unstable versions: unstable ${UNSTABLE_VERSION}"
+          git push
+  rebase-preview:
+    needs: [get-node-prerelease, get-mithril-prerelease]
+    runs-on: ubuntu-latest
+    steps:
+      - name: Set summary details
+        run: |
+          echo "## Rebase Preview" >> $GITHUB_STEP_SUMMARY
+          echo "| Name | Value |" >> $GITHUB_STEP_SUMMARY
+          echo "| ---- | ----- |" >> $GITHUB_STEP_SUMMARY
+      - uses: actions/checkout@v2
+        with:
+          ref: preview
+          fetch-depth: 0
+      - name: Configure Git
+        run: |
+          git config --global user.name "${GITHUB_ACTOR}"
+          git config --global user.email "${GITHUB_ACTOR}@users.noreply.github.com"
+      - name: Fetch alpha
+        run: |
+          git fetch origin alpha
+      - name: Get current SHA
+        run: |
+          echo "sha=$(git rev-parse HEAD)" >> "$GITHUB_OUTPUT"
+      - name: Rebase on alpha
+        run: |
+          git rebase origin/alpha
+      - name: Check for changes
+        id: git-check
+        run: |
+          export MODIFIED=$([ "$(git rev-parse HEAD)" != "$(jq -r '.sha' "$GITHUB_OUTPUT")" ] && echo "true" || echo "false")
+          echo "MODIFIED=${MODIFIED}" >> "$GITHUB_OUTPUT"
+          echo "| Repository Modified | ${MODIFIED} |" >> "$GITHUB_STEP_SUMMARY"
+      - name: Push changes
+        if: steps.git-check.outputs.MODIFIED == 'true'
+        run: |
+          echo "| Changed Files | $(git diff --name-only $(jq -r '.sha' "$GITHUB_OUTPUT")) |" >> "$GITHUB_STEP_SUMMARY"
+          git push --force-with-lease
+  rebase-sanchonet:
+    needs: [get-node-prerelease, get-mithril-unstable]
+    runs-on: ubuntu-latest
+    steps:
+      - name: Set summary details
+        run: |
+          echo "## Rebase Sanchonet" >> $GITHUB_STEP_SUMMARY
+          echo "| Name | Value |" >> $GITHUB_STEP_SUMMARY
+          echo "| ---- | ----- |" >> $GITHUB_STEP_SUMMARY
+      - uses: actions/checkout@v2
+        with:
+          ref: sanchonet
+          fetch-depth: 0
+      - name: Configure Git
+        run: |
+          git config --global user.name "${GITHUB_ACTOR}"
+          git config --global user.email "${GITHUB_ACTOR}@users.noreply.github.com"
+      - name: Fetch alpha
+        run: |
+          git fetch origin alpha
+      - name: Get current SHA
+        run: |
+          echo "sha=$(git rev-parse HEAD)" >> "$GITHUB_OUTPUT"
+      - name: Rebase on alpha
+        run: |
+          git rebase origin/alpha
+      - name: Check for changes
+        id: git-check
+        run: |
+          export MODIFIED=$([ "$(git rev-parse HEAD)" != "$(jq -r '.sha' "$GITHUB_OUTPUT")" ] && echo "true" || echo "false")
+          echo "MODIFIED=${MODIFIED}" >> "$GITHUB_OUTPUT"
+          echo "| Repository Modified | ${MODIFIED} |" >> "$GITHUB_STEP_SUMMARY"
+      - name: Push changes
+        if: steps.git-check.outputs.MODIFIED == 'true'
+        run: |
+          echo "| Changed Files | $(git diff --name-only $(jq -r '.sha' "$GITHUB_OUTPUT")) |" >> "$GITHUB_STEP_SUMMARY"
+          git push --force-with-lease
+        
