@@ -49,10 +49,14 @@ jobs:
       id: set_short_sha
       run: |
         echo "short_sha=$(git rev-parse --short HEAD)" >> $GITHUB_OUTPUT
-    - name: Get CNVERSION
+    - name: Set CNVersion
       id: set_cnversion
       run: |
-        echo "cnversion=$(cat files/docker/node/release-versions/cardano-node-latest.txt)" >> $GITHUB_OUTPUT
+        if [[ "${{ steps.set_guild_deploy_branch.outputs.guild_deploy_branch }}" != "preview" && "${{ steps.set_guild_deploy_branch.outputs.guild_deploy_branch }}" != "sanchonet" ]]; then
+          echo "cnversion=$(cat files/docker/node/release-versions/cardano-node-latest.txt)" >> "$GITHUB_OUTPUT"
+        else
+          echo "cnversion=$(cat files/docker/node/release-versions/cardano-node-prerelease.txt)" >> "$GITHUB_OUTPUT"
+        fi
   build_production:
     needs: set_environment_vars
     if: needs.set_environment_vars.outputs.testing == 'false' && needs.set_environment_vars.outputs.guild_deploy_branch == 'master'
