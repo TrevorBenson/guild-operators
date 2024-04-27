@@ -1,0 +1,40 @@
+name: Get Mithril unstable version
+on:
+  workflow_dispatch:
+  schedule:
+    - cron:  '0 */8 * * *'
+jobs:
+  get-version:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v2
+        with:
+          fetch-depth: 0
+          ref: sanchonet
+      - name: Configure Git
+        run: |
+          git config --global user.name "${GITHUB_ACTOR}"
+          git config --global user.email "${GITHUB_ACTOR}@users.noreply.github.com"
+          echo "GitHub Actor: ${GITHUB_ACTOR}" >> "$GITHUB_STEP_SUMMARY"
+          echo "GitHub Email: ${GITHUB_ACTOR}@users.noreply.github.com" >> "$GITHUB_STEP_SUMMARY"
+      - name: Fetch Mithril unstable version
+        run: |
+          curl -sL https://api.github.com/repos/input-output-hk/mithril/releases | jq -r '.[] | select(.prerelease == true and .tag_name == "unstable") | .tag_name' | head -1 > files/docker/node/release-versions/mithril-unstable.txt
+      - name: Assign unstable version
+        run: |
+          export UNSTABLE_VERSION=$(cat files/docker/node/release-versions/mithril-unstable.txt)
+          echo "UNSTABLE_VERSION=${UNSTABLE_VERSION}" >> $GITHUB_ENV
+          echo "Unstable version: ${UNSTABLE_VERSION}" >> $GITHUB_STEP_SUMMARY
+      - name: Check for changes
+        id: git-check
+        run: |
+          export MODIFIED=$([ -z "`git status --porcelain`" ] && echo "false" || echo "true")
+          echo "MODIFIED=${MODIFIED}" >> "$GITHUB_OUTPUT"
+          echo "Repository Modified: ${MODIFIED}" >> "$GITHUB_STEP_SUMMARY"
+      - name: Commit latest unstable versions
+        if: steps.git-check.outputs.MODIFIED == 'true'
+        run: |
+          echo "Modified files: $(git diff --name-only $(jq -r '.sha' "$GITHUB_OUTPUT"))" >> "$GITHUB_STEP_SUMMARY"
+          git add files/docker/node/release-versions/mithril-unstable.txt
+          git commit -am "New mithril unstable versions: unstable ${UNSTABLE_VERSION}"
+          git push
