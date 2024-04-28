@@ -5,7 +5,7 @@ on:
     branches:
       - alpha
   schedule:
-    - cron:  '0 */8 * * *'
+    - cron:  '0 */12 * * *'
 
 jobs:
   start-summary:
@@ -49,6 +49,7 @@ jobs:
           MODIFIED=$([ -z "`git status --porcelain`" ] && echo "false" || echo "true")
           echo "MODIFIED=${MODIFIED}" >> "$GITHUB_OUTPUT"
       - name: Set summary details
+        if: always()
         run: |
           echo "## Get Node Pre-Release ${{ matrix.branch }}" >> $GITHUB_STEP_SUMMARY
           echo "| Name                 | Value                                                                   |" >> $GITHUB_STEP_SUMMARY
@@ -100,6 +101,7 @@ jobs:
           MODIFIED=$([ -z "`git status --porcelain`" ] && echo "false" || echo "true")
           echo "MODIFIED=${MODIFIED}" >> "$GITHUB_OUTPUT"
       - name: Set summary details
+        if: always()
         run: |
           echo "## Get Mithril Pre-Release" >> $GITHUB_STEP_SUMMARY
           echo "| Name                          | Value                                                                   |" >> $GITHUB_STEP_SUMMARY
@@ -143,6 +145,7 @@ jobs:
           MODIFIED=$([ -z "`git status --porcelain`" ] && echo "false" || echo "true")
           echo "MODIFIED=${MODIFIED}" >> "$GITHUB_OUTPUT"
       - name: Set summary details
+        if: always()
         run: |
           echo "## Get Mithril Unstable" >> $GITHUB_STEP_SUMMARY
           echo "| Name                 | Value                                                                   |" >> $GITHUB_STEP_SUMMARY
@@ -187,6 +190,7 @@ jobs:
           MODIFIED=$([ "$(git rev-parse HEAD)" != "$(echo ${{ steps.set_sha.outputs.COMMIT_SHA }})" ] && echo "true" || echo "false")
           echo "MODIFIED=${MODIFIED}" >> "$GITHUB_OUTPUT"
       - name: Set summary details
+        if: always()
         run: |
           echo "## Rebase ${{ matrix.branch }}" >> $GITHUB_STEP_SUMMARY
           echo "| Name                  | Value                                                                   |" >> $GITHUB_STEP_SUMMARY
