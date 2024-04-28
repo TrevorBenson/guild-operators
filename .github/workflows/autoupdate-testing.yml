@@ -33,6 +33,10 @@ jobs:
         run: |
           git config --global user.name "${GITHUB_ACTOR}"
           git config --global user.email "${GITHUB_ACTOR}@users.noreply.github.com"
+      - name: Get current SHA
+        id: set_sha
+        run: |
+          echo "COMMIT_SHA=$(git rev-parse HEAD)" >> "$GITHUB_OUTPUT"
       - name: Fetch node pre-release version
         run: |
           curl -sL https://api.github.com/repos/IntersectMBO/cardano-node/releases | jq -r '.[] | select(.prerelease == true) | .tag_name' | head -1 > files/docker/node/release-versions/cardano-node-prerelease.txt
@@ -47,10 +51,10 @@ jobs:
       - name: Set summary details
         run: |
           echo "## Get Node Pre-Release ${{ matrix.branch }}" >> $GITHUB_STEP_SUMMARY
-          echo "| Name                 | Value                                                      |" >> $GITHUB_STEP_SUMMARY
-          echo "| -------------------- | ---------------------------------------------------------- |" >> $GITHUB_STEP_SUMMARY      
-          echo "| Repository Modified  | ${{ steps.git-check.outputs.MODIFIED }}                    |" >> $GITHUB_STEP_SUMMARY
-          echo "| Modified files       | $(git diff --name-only $(jq -r '.sha' "$GITHUB_OUTPUT"))   |" >> $GITHUB_STEP_SUMMARY
+          echo "| Name                 | Value                                                                   |" >> $GITHUB_STEP_SUMMARY
+          echo "| -------------------- | ----------------------------------------------------------              |" >> $GITHUB_STEP_SUMMARY      
+          echo "| Repository Modified  | ${{ steps.git-check.outputs.MODIFIED }}                                 |" >> $GITHUB_STEP_SUMMARY
+          echo "| Modified files       | $(git diff --name-only $(echo ${{ steps.set_sha.outputs.COMMIT_SHA }})) |" >> $GITHUB_STEP_SUMMARY
       - name: Commit latest pre-release versions
         if: steps.git-check.outputs.MODIFIED == 'true'
         run: |
@@ -69,6 +73,10 @@ jobs:
         run: |
           git config --global user.name "${GITHUB_ACTOR}"
           git config --global user.email "${GITHUB_ACTOR}@users.noreply.github.com"
+      - name: Get current SHA
+        id: set_sha
+        run: |
+          echo "COMMIT_SHA=$(git rev-parse HEAD)" >> "$GITHUB_OUTPUT"
       - name: Fetch Mithril release and pre-release versions
         run: |
           mithril_release="$(curl -s https://api.github.com/repos/input-output-hk/mithril/releases/latest | jq -r '.tag_name')"
@@ -94,12 +102,12 @@ jobs:
       - name: Set summary details
         run: |
           echo "## Get Mithril Pre-Release" >> $GITHUB_STEP_SUMMARY
-          echo "| Name                          | Value                                                    |" >> $GITHUB_STEP_SUMMARY
-          echo "| ----------------------------- | -------------------------------------------------------- |" >> $GITHUB_STEP_SUMMARY
-          echo "| Pre-release version           | ${PRERELEASE_VERSION}                                    |" >> $GITHUB_STEP_SUMMARY
-          echo "| Pre-release matches Release   | ${RELEASE_MATCH}                                         |" >> $GITHUB_STEP_SUMMARY
-          echo "| Repository Modified           | ${{ steps.git-check.outputs.MODIFIED }}                  |" >> $GITHUB_STEP_SUMMARY
-          echo "| Modified files                | $(git diff --name-only $(jq -r '.sha' "$GITHUB_OUTPUT")) |" >> $GITHUB_STEP_SUMMARY
+          echo "| Name                          | Value                                                                   |" >> $GITHUB_STEP_SUMMARY
+          echo "| ----------------------------- | --------------------------------------------------------                |" >> $GITHUB_STEP_SUMMARY
+          echo "| Pre-release version           | ${PRERELEASE_VERSION}                                                   |" >> $GITHUB_STEP_SUMMARY
+          echo "| Pre-release matches Release   | ${RELEASE_MATCH}                                                        |" >> $GITHUB_STEP_SUMMARY
+          echo "| Repository Modified           | ${{ steps.git-check.outputs.MODIFIED }}                                 |" >> $GITHUB_STEP_SUMMARY
+          echo "| Modified files                | $(git diff --name-only $(echo ${{ steps.set_sha.outputs.COMMIT_SHA }})) |" >> $GITHUB_STEP_SUMMARY
       - name: Commit latest pre-release versions
         if: steps.git-check.outputs.MODIFIED == 'true'
         run: |
@@ -118,6 +126,10 @@ jobs:
         run: |
           git config --global user.name "${GITHUB_ACTOR}"
           git config --global user.email "${GITHUB_ACTOR}@users.noreply.github.com"
+      - name: Get current SHA
+        id: set_sha
+        run: |
+          echo "COMMIT_SHA=$(git rev-parse HEAD)" >> "$GITHUB_OUTPUT"
       - name: Fetch Mithril unstable version
         run: |
           curl -sL https://api.github.com/repos/input-output-hk/mithril/releases | jq -r '.[] | select(.prerelease == true and .tag_name == "unstable") | .tag_name' | head -1 > files/docker/node/release-versions/mithril-unstable.txt
@@ -133,11 +145,11 @@ jobs:
       - name: Set summary details
         run: |
           echo "## Get Mithril Unstable" >> $GITHUB_STEP_SUMMARY
-          echo "| Name                 | Value                                                    |" >> $GITHUB_STEP_SUMMARY
-          echo "| -------------------- | -------------------------------------------------------- |" >> $GITHUB_STEP_SUMMARY
-          echo "| Unstable version     | ${UNSTABLE_VERSION}                                      |" >> $GITHUB_STEP_SUMMARY
-          echo "| Repository Modified  | ${{ steps.git-check.outputs.MODIFIED }}                  |" >> $GITHUB_STEP_SUMMARY
-          echo "| Modified files       | $(git diff --name-only $(jq -r '.sha' "$GITHUB_OUTPUT")) |" >> $GITHUB_STEP_SUMMARY
+          echo "| Name                 | Value                                                                   |" >> $GITHUB_STEP_SUMMARY
+          echo "| -------------------- | ----------------------------------------------------------------------- |" >> $GITHUB_STEP_SUMMARY
+          echo "| Unstable version     | ${UNSTABLE_VERSION}                                                     |" >> $GITHUB_STEP_SUMMARY
+          echo "| Repository Modified  | ${{ steps.git-check.outputs.MODIFIED }}                                 |" >> $GITHUB_STEP_SUMMARY
+          echo "| Modified files       | $(git diff --name-only $(echo ${{ steps.set_sha.outputs.COMMIT_SHA }})) |" >> $GITHUB_STEP_SUMMARY
       - name: Commit latest unstable versions
         if: steps.git-check.outputs.MODIFIED == 'true'
         run: |
@@ -159,27 +171,28 @@ jobs:
         run: |
           git config --global user.name "${GITHUB_ACTOR}"
           git config --global user.email "${GITHUB_ACTOR}@users.noreply.github.com"
+      - name: Get current SHA
+        id: set_sha
+        run: |
+          echo "COMMIT_SHA=$(git rev-parse HEAD)" >> "$GITHUB_OUTPUT"
       - name: Fetch alpha
         run: |
           git fetch origin alpha
-      - name: Get current SHA
-        run: |
-          echo "sha=$(git rev-parse HEAD)" >> "$GITHUB_OUTPUT"
       - name: Rebase on alpha
         run: |
           git rebase origin/alpha
       - name: Check for changes
         id: git-check
         run: |
-          MODIFIED=$([ "$(git rev-parse HEAD)" != "$(jq -r '.sha' "$GITHUB_OUTPUT")" ] && echo "true" || echo "false")
+          MODIFIED=$([ "$(git rev-parse HEAD)" != "$(echo ${{ steps.set_sha.outputs.COMMIT_SHA }})" ] && echo "true" || echo "false")
           echo "MODIFIED=${MODIFIED}" >> "$GITHUB_OUTPUT"
       - name: Set summary details
         run: |
           echo "## Rebase ${{ matrix.branch }}" >> $GITHUB_STEP_SUMMARY
-          echo "| Name                  | Value                                                      |" >> $GITHUB_STEP_SUMMARY
-          echo "| --------------------- | ---------------------------------------------------------- |" >> $GITHUB_STEP_SUMMARY
-          echo "| Repository Modified   | ${{ steps.git-check.outputs.MODIFIED }}                    |" >> $GITHUB_STEP_SUMMARY
-          echo "| Changed Files         | $(git diff --name-only $(jq -r '.sha' "$GITHUB_OUTPUT"))   |" >> $GITHUB_STEP_SUMMARY
+          echo "| Name                  | Value                                                                   |" >> $GITHUB_STEP_SUMMARY
+          echo "| --------------------- | ----------------------------------------------------------------------- |" >> $GITHUB_STEP_SUMMARY
+          echo "| Repository Modified   | ${{ steps.git-check.outputs.MODIFIED }}                                 |" >> $GITHUB_STEP_SUMMARY
+          echo "| Changed Files         | $(git diff --name-only $(echo ${{ steps.set_sha.outputs.COMMIT_SHA }})) |" >> $GITHUB_STEP_SUMMARY
       - name: Push changes
         if: steps.git-check.outputs.MODIFIED == 'true'
         run: |
