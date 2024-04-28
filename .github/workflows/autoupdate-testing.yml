@@ -14,9 +14,9 @@ jobs:
       - name: Set summary details
         run: |
           echo "## Autoupdate Testing Branches Summary Details" >> $GITHUB_STEP_SUMMARY
-          echo "| Name | Value |" >> $GITHUB_STEP_SUMMARY
-          echo "| ---- | ----- |" >> $GITHUB_STEP_SUMMARY
-          echo "| GitHub Actor | ${GITHUB_ACTOR} |" >> $GITHUB_STEP_SUMMARY
+          echo "| Name         | Value                                    |" >> $GITHUB_STEP_SUMMARY
+          echo "| ------------ | ---------------------------------------- |" >> $GITHUB_STEP_SUMMARY
+          echo "| GitHub Actor | ${GITHUB_ACTOR}                          |" >> $GITHUB_STEP_SUMMARY
           echo "| GitHub Email | ${GITHUB_ACTOR}@users.noreply.github.com |" >> $GITHUB_STEP_SUMMARY
   get-node-prerelease:
     needs: start-summary
@@ -25,12 +25,7 @@ jobs:
       matrix:
         branch: [preview, sanchonet]
     steps:
-      - name: Set summary details
-        run: |
-          echo "## Get Node Pre-Release" >> $GITHUB_STEP_SUMMARY
-          echo "| Name | Value |" >> $GITHUB_STEP_SUMMARY
-          echo "| ---- | ----- |" >> $GITHUB_STEP_SUMMARY
-      - uses: actions/checkout@v2
+      - uses: actions/checkout@v4
         with:
           fetch-depth: 0
           ref: ${{ matrix.branch }}
@@ -49,11 +44,16 @@ jobs:
         run: |
           export MODIFIED=$([ -z "`git status --porcelain`" ] && echo "false" || echo "true")
           echo "MODIFIED=${MODIFIED}" >> "$GITHUB_OUTPUT"
-          echo "|  Repository Modified  |  ${MODIFIED}  |" >> $GITHUB_STEP_SUMMARY
+      - name: Set summary details
+        run: |
+          echo "## Get Node Pre-Release ${{ matrix.branch }}" >> $GITHUB_STEP_SUMMARY
+          echo "| Name                 | Value                                                      |" >> $GITHUB_STEP_SUMMARY
+          echo "| -------------------- | ---------------------------------------------------------- |" >> $GITHUB_STEP_SUMMARY      
+          echo "| Repository Modified  | ${MODIFIED}                                                |" >> $GITHUB_STEP_SUMMARY
+          echo "| Modified files       | $(git diff --name-only $(jq -r '.sha' "$GITHUB_OUTPUT"))   |" >> $GITHUB_STEP_SUMMARY
       - name: Commit latest pre-release versions
         if: steps.git-check.outputs.MODIFIED == 'true'
         run: |
-          echo "|  Modified files  |  $(git diff --name-only $(jq -r '.sha' "$GITHUB_OUTPUT"))  |" >> $GITHUB_STEP_SUMMARY
           git add files/docker/node/release-versions/cardano-node-prerelease.txt
           git commit -am "New mithril pre-release versions: pre-release ${PRERELEASE_VERSION}"
           git push
@@ -61,12 +61,7 @@ jobs:
     needs: get-node-prerelease
     runs-on: ubuntu-latest
     steps:
-      - name: Set summary details
-        run: |
-          echo "## Get Mithril Pre-Release" >> $GITHUB_STEP_SUMMARY
-          echo "| Name | Value |" >> $GITHUB_STEP_SUMMARY
-          echo "| ---- | ----- |" >> $GITHUB_STEP_SUMMARY
-      - uses: actions/checkout@v2
+      - uses: actions/checkout@v4
         with:
           fetch-depth: 0
           ref: preview
@@ -82,24 +77,32 @@ jobs:
             echo "${mithril_release}" > files/docker/node/release-versions/mithril-prerelease.txt
             PRERELEASE_VERSION=${mithril_release}
             echo "PRERELEASE_VERSION=${PRERELEASE_VERSION}" >> $GITHUB_ENV
-            echo "|  Pre-release matches Release  |  True  |" >> $GITHUB_STEP_SUMMARY
+            echo "RELEASE_MATCH=True" >> $GITHUB_ENV
+            
           else
             echo "${mithril_prerelease}" > files/docker/node/release-versions/mithril-prerelease.txt
             PRERELEASE_VERSION=${mithril_prerelease}
             echo "PRERELEASE_VERSION=${PRERELEASE_VERSION}" >> $GITHUB_ENV
-            echo "|  Pre-release matches Release  |  False  |" >> $GITHUB_STEP_SUMMARY
+            echo "RELEASE_MATCH=False" >> $GITHUB_ENV
           fi
-          echo "| Pre-release version | ${PRERELEASE_VERSION} |" >> $GITHUB_STEP_SUMMARY
+          
       - name: Check for changes
         id: git-check
         run: |
           export MODIFIED=$([ -z "`git status --porcelain`" ] && echo "false" || echo "true")
           echo "MODIFIED=${MODIFIED}" >> "$GITHUB_OUTPUT"
-          echo "|  Repository Modified  |  ${MODIFIED}  |" >> $GITHUB_STEP_SUMMARY
+      - name: Set summary details
+        run: |
+          echo "## Get Mithril Pre-Release" >> $GITHUB_STEP_SUMMARY
+          echo "| Name                          | Value                                                    |" >> $GITHUB_STEP_SUMMARY
+          echo "| ----------------------------- | -------------------------------------------------------- |" >> $GITHUB_STEP_SUMMARY
+          echo "| Pre-release version           | ${PRERELEASE_VERSION}                                    |" >> $GITHUB_STEP_SUMMARY
+          echo "| Pre-release matches Release   | ${RELEASE_MATCH}                                         |" >> $GITHUB_STEP_SUMMARY
+          echo "| Repository Modified           | ${MODIFIED}                                              |" >> $GITHUB_STEP_SUMMARY
+          echo "| Modified files                | $(git diff --name-only $(jq -r '.sha' "$GITHUB_OUTPUT")) |" >> $GITHUB_STEP_SUMMARY
       - name: Commit latest pre-release versions
         if: steps.git-check.outputs.MODIFIED == 'true'
         run: |
-          echo "| Modified files | $(git diff --name-only $(jq -r '.sha' "$GITHUB_OUTPUT")) |" >> $GITHUB_STEP_SUMMARY
           git add files/docker/node/release-versions/mithril-prerelease.txt
           git commit -am "New mithril pre-release versions: pre-release ${PRERELEASE_VERSION}"
           git push
@@ -107,12 +110,7 @@ jobs:
     needs: get-node-prerelease
     runs-on: ubuntu-latest
     steps:
-      - name: Set summary details
-        run: |
-          echo "## Get Mithril Unstable" >> $GITHUB_STEP_SUMMARY
-          echo "| Name | Value |" >> $GITHUB_STEP_SUMMARY
-          echo "| ---- | ----- |" >> $GITHUB_STEP_SUMMARY
-      - uses: actions/checkout@v2
+      - uses: actions/checkout@v4
         with:
           fetch-depth: 0
           ref: sanchonet
@@ -127,17 +125,22 @@ jobs:
         run: |
           export UNSTABLE_VERSION=$(cat files/docker/node/release-versions/mithril-unstable.txt)
           echo "UNSTABLE_VERSION=${UNSTABLE_VERSION}" >> $GITHUB_ENV
-          echo "|  Unstable version  |  ${UNSTABLE_VERSION}  |" >> $GITHUB_STEP_SUMMARY
-      - name: Check for changes
-        id: git-check
-        run: |
+          - name: Check for changes
+          id: git-check
+          run: |
           export MODIFIED=$([ -z "`git status --porcelain`" ] && echo "false" || echo "true")
           echo "MODIFIED=${MODIFIED}" >> "$GITHUB_OUTPUT"
-          echo "|  Repository Modified  |  ${MODIFIED}  |" >> $GITHUB_STEP_SUMMARY
+      - name: Set summary details
+        run: |
+          echo "## Get Mithril Unstable" >> $GITHUB_STEP_SUMMARY
+          echo "| Name                 | Value                                                    |" >> $GITHUB_STEP_SUMMARY
+          echo "| -------------------- | -------------------------------------------------------- |" >> $GITHUB_STEP_SUMMARY
+          echo "| Unstable version     | ${UNSTABLE_VERSION}                                      |" >> $GITHUB_STEP_SUMMARY
+          echo "| Repository Modified  | ${MODIFIED}                                              |" >> $GITHUB_STEP_SUMMARY
+          echo "| Modified files       | $(git diff --name-only $(jq -r '.sha' "$GITHUB_OUTPUT")) |" >> $GITHUB_STEP_SUMMARY
       - name: Commit latest unstable versions
         if: steps.git-check.outputs.MODIFIED == 'true'
         run: |
-          echo "| Modified files | $(git diff --name-only $(jq -r '.sha' "$GITHUB_OUTPUT")) |" >> $GITHUB_STEP_SUMMARY
           git add files/docker/node/release-versions/mithril-unstable.txt
           git commit -am "New mithril unstable versions: unstable ${UNSTABLE_VERSION}"
           git push
@@ -148,12 +151,7 @@ jobs:
       matrix:
         branch: [preview, sanchonet]
     steps:
-      - name: Set summary details
-        run: |
-          echo "## Rebase Preview" >> $GITHUB_STEP_SUMMARY
-          echo "| Name | Value |" >> $GITHUB_STEP_SUMMARY
-          echo "| ---- | ----- |" >> $GITHUB_STEP_SUMMARY
-      - uses: actions/checkout@v2
+      - uses: actions/checkout@v4
         with:
           ref: ${{ matrix.branch }}
           fetch-depth: 0
@@ -175,9 +173,14 @@ jobs:
         run: |
           export MODIFIED=$([ "$(git rev-parse HEAD)" != "$(jq -r '.sha' "$GITHUB_OUTPUT")" ] && echo "true" || echo "false")
           echo "MODIFIED=${MODIFIED}" >> "$GITHUB_OUTPUT"
-          echo "|  Repository Modified  |  ${MODIFIED}  |" >> $GITHUB_STEP_SUMMARY
+      - name: Set summary details
+        run: |
+          echo "## Rebase ${{ matrix.branch }}" >> $GITHUB_STEP_SUMMARY
+          echo "| Name                  | Value                                                      |" >> $GITHUB_STEP_SUMMARY
+          echo "| --------------------- | ---------------------------------------------------------- |" >> $GITHUB_STEP_SUMMARY
+          echo "| Repository Modified   | ${MODIFIED}                                                |" >> $GITHUB_STEP_SUMMARY
+          echo "| Changed Files         | $(git diff --name-only $(jq -r '.sha' "$GITHUB_OUTPUT"))   |" >> $GITHUB_STEP_SUMMARY
       - name: Push changes
         if: steps.git-check.outputs.MODIFIED == 'true'
         run: |
-          echo "|  Changed Files  |  $(git diff --name-only $(jq -r '.sha' "$GITHUB_OUTPUT"))  |" >> $GITHUB_STEP_SUMMARY
           git push --force-with-lease
