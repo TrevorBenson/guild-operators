@@ -141,6 +141,7 @@ jobs:
         build-args: |
           G_ACCOUNT=${{ needs.set_environment_vars.outputs.g_account }}
           GUILD_DEPLOY_BRANCH=${{ needs.set_environment_vars.outputs.guild_deploy_branch }}
+          CARDANO_NODE_VERSION=${{ needs.set_environment_vars.outputs.cnversion }}
     - name: Add summary details
       if: always()
       run: |
