@@ -1,0 +1,99 @@
+---
+name: Update pre-release configs
+
+on:
+  workflow_dispatch:
+  push:
+    branches:
+      - sanchonet
+      - preview
+    paths:
+      - 'files/docker/node/releases/cardano-node-prerelease.txt'
+
+jobs:
+  update_config:
+    runs-on: ubuntu-latest
+    strategy:
+      matrix:
+        branch: [preview, sanchonet]
+    steps:
+      - name: Extract branch name
+        id: extract_branch
+        run: |
+          echo "Setting branch output to $GITHUB_REF"
+          echo "BRANCH=$(echo $GITHUB_REF | awk -F'/' '{print $NF}')" >> $GITHUB_OUTPUT
+
+      - name: Set matrix branch as output for if conditions
+        id: set_matrix_branch
+        run: |
+          echo "matrix_branch=${{ matrix.branch }}" >> $GITHUB_OUTPUT
+
+      - name: Checkout repository
+        if: ${{ steps.extract_branch.outputs.branch == steps.set_matrix_branch.outputs.matrix_branch }}
+        uses: actions/checkout@v4
+        with:
+          ref: ${{ matrix.branch }}
+
+      - name: Download configs
+        if: ${{ steps.extract_branch.outputs.branch == steps.set_matrix_branch.outputs.matrix_branch }}
+        run: |
+          curl -o files/configs/${{ matrix.branch }}/new_config.json https://book.world.dev.cardano.org/environments/${{ matrix.branch }}/config-bp.json
+          curl -o files/configs/${{ matrix.branch }}/alonzo-genesis.json https://book.world.dev.cardano.org/environments/${{ matrix.branch }}/alonzo-genesis.json
+          curl -o files/configs/${{ matrix.branch }}/byron-genesis.json https://book.world.dev.cardano.org/environments/${{ matrix.branch }}/byron-genesis.json
+          curl -o files/configs/${{ matrix.branch }}/conway-genesis.json https://book.world.dev.cardano.org/environments/${{ matrix.branch }}/conway-genesis.json
+          curl -o files/configs/${{ matrix.branch }}/shelley-genesis.json https://book.world.dev.cardano.org/environments/${{ matrix.branch }}/shelley-genesis.json
+          curl -o files/configs/${{ matrix.branch }}/new_topology.json https://book.world.dev.cardano.org/environments/${{ matrix.branch }}/topology.json
+
+      - name: Modify config.json
+        if: ${{ steps.extract_branch.outputs.branch == steps.set_matrix_branch.outputs.matrix_branch }}
+        run: |
+          jq 'del(.AlonzoGenesisHash, .ByronGenesisHash, .ConwayGenesisHash, .ShelleyGenesisHash)' files/configs/${{ matrix.branch }}/new_config.json | \
+          jq '.defaultScribes = [["FileSK", "/opt/cardano/cnode/logs/node.json"]]' | \
+          jq '. += { "EnableLogging": true, "EnableLogMetrics": false }' | \
+          jq '.setupBackends += ["EKGViewBK"]' | \
+          jq '.setupScribes = [{"scKind": "FileSK", "scName": "/opt/cardano/cnode/logs/node.json", "scFormat": "ScJson", "scRotation": null}]' | \
+          jq '.TargetNumberOfRootPeers = 60' | \
+          jq '.TraceBlockFetchClient = true' | \
+          jq '.TraceChainSyncClient = true' | \
+          jq '.AlonzoGenesisFile = "/opt/cardano/cnode/files/alonzo-genesis.json"' | \
+          jq '.ByronGenesisFile = "/opt/cardano/cnode/files/byron-genesis.json"' | \
+          jq '.ConwayGenesisFile = "/opt/cardano/cnode/files/conway-genesis.json"' | \
+          jq '.ShelleyGenesisFile = "/opt/cardano/cnode/files/shelley-genesis.json"' > files/configs/${{ matrix.branch }}/tmp_config.json
+          mv files/configs/${{ matrix.branch }}/tmp_config.json files/configs/${{ matrix.branch }}/config.json
+          rm files/configs/${{ matrix.branch }}/new_config.json
+
+      - name: Modify topology.json with guild-operators localRoots
+        if: ${{ steps.extract_branch.outputs.branch == steps.set_matrix_branch.outputs.matrix_branch && steps.set_matrix_branch.outputs.matrix_branch == 'preview' }}
+        run: |
+          jq '.localRoots' files/configs/${{ matrix.branch }}/topology.json > localRoots.json
+          jq --argfile localRoots localRoots.json '.localRoots = $localRoots' files/configs/${{ matrix.branch }}/new_topology.json > tmp_topology.json
+          mv files/configs/${{ matrix.branch }}/tmp_topology.json files/configs/${{ matrix.branch }}/topology.json
+          rm files/configs/${{ matrix.branch }}/new_topology.json localRoots.json
+
+      - name: Check for changes
+        id: git-check
+        run: |
+          MODIFIED=$([ -z "`git status --porcelain`" ] && echo "false" || echo "true")
+          echo "MODIFIED=${MODIFIED}" >> "$GITHUB_OUTPUT"
+        
+      - name: Commit new configs
+        if: ${{ steps.extract_branch.outputs.branch == steps.set_matrix_branch.outputs.matrix_branch && steps.git-check.outputs.MODIFIED == 'true' }}
+        run: |
+          git config --global user.name ${{ secrets.REPO_SCOPED_USER }}
+          git config --global user.email ${{ secrets.REPO_SCOPED_EMAIL }}
+          git add files/configs/${{ matrix.branch }}/.
+          git commit -m "New ${{ matrix.branch }} Configuration"
+
+      - name: Push changes
+        if: ${{ steps.extract_branch.outputs.branch == steps.set_matrix_branch.outputs.matrix_branch && steps.git-check.outputs.MODIFIED == 'true' }}
+        uses: ad-m/github-push-action@master
+        with:
+          branch: ${{ matrix.branch }}
+      - name: Set summary details
+        if: always()
+        run: |
+          echo "## Rebase ${{ matrix.branch }}" >> $GITHUB_STEP_SUMMARY
+          echo "| Name                  | Value                                                                                  |" >> $GITHUB_STEP_SUMMARY
+          echo "| --------------------- | -----------------------------------------------------------------------                |" >> $GITHUB_STEP_SUMMARY
+          echo "| Repository Modified   | ${{ steps.git-check.outputs.MODIFIED }}                                                |" >> $GITHUB_STEP_SUMMARY
+          echo "| Modified Files        | $(git diff --name-only $(echo ${{ steps.set_sha.outputs.COMMIT_SHA }}) | tr '\n' ',')  |" >> $GITHUB_STEP_SUMMARY
