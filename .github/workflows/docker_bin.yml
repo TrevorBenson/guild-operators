@@ -52,7 +52,7 @@ jobs:
     - name: Set CNVersion
       id: set_cnversion
       run: |
-        if [[ "${{ steps.set_guild_deploy_branch.outputs.guild_deploy_branch }}" == "sanchonet" ]]; then
+        if [[ "${{ steps.set_guild_deploy_branch.outputs.guild_deploy_branch }}" == "sanchonet" || "${{ steps.set_guild_deploy_branch.outputs.guild_deploy_branch }}" == "preview" ]]; then
           echo "cnversion=$(cat files/docker/node/release-versions/cardano-node-prerelease.txt)" >> "$GITHUB_OUTPUT"
         else
           echo "cnversion=$(cat files/docker/node/release-versions/cardano-node-latest.txt)" >> "$GITHUB_OUTPUT"
@@ -85,7 +85,7 @@ jobs:
         username: ${{ secrets.DOCKER_USER }}
         password: ${{ secrets.DOCKER_PASSWORD }}
     - name: Build and Push production container image
-      uses: docker/build-push-action@v5
+      uses: docker/build-push-action@v5.3.0
       with:
         context: .
         file: files/docker/node/dockerfile_bin
@@ -131,8 +131,10 @@ jobs:
         registry: ${{ env.REGISTRY}}
         username: ${{ github.repository_owner }}
         password: ${{ secrets.GITHUB_TOKEN }}
+    - name: Docker Setup Buildx
+      uses: docker/setup-buildx-action@v3.3.0
     - name: Build and Push testing container image
-      uses: docker/build-push-action@v5
+      uses: docker/build-push-action@v5.3.0
       with:
         context: .
         file: files/docker/node/dockerfile_bin
@@ -142,6 +144,8 @@ jobs:
           G_ACCOUNT=${{ needs.set_environment_vars.outputs.g_account }}
           GUILD_DEPLOY_BRANCH=${{ needs.set_environment_vars.outputs.guild_deploy_branch }}
           CARDANO_NODE_VERSION=${{ needs.set_environment_vars.outputs.cnversion }}
+        cache-from: type=gha
+        cache-to: type=gha,mode=max
     - name: Add summary details
       if: always()
       run: |
