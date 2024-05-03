@@ -13,8 +13,6 @@
   "Protocol": "Cardano",
   "RequiresNetworkMagic": "RequiresMagic",
   "ShelleyGenesisFile": "/opt/cardano/cnode/files/shelley-genesis.json",
-  "EnableLogging": true,
-  "EnableLogMetrics": false,
   "TargetNumberOfActivePeers": 20,
   "TargetNumberOfEstablishedPeers": 50,
   "TargetNumberOfKnownPeers": 100,
@@ -95,7 +93,7 @@
   },
   "rotation": {
     "rpKeepFilesNum": 10,
-    "rpLogLimitBytes": 50000000,
+    "rpLogLimitBytes": 5000000,
     "rpMaxAgeHours": 24
   },
   "setupBackends": [
@@ -109,5 +107,7 @@
       "scFormat": "ScJson",
       "scRotation": null
     }
-  ]
+  ],
+  "EnableLogging": true,
+  "EnableLogMetrics": false
 }
