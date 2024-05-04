@@ -59,7 +59,7 @@ RUN set -x && apt update \
 RUN set -x && export SUDO='N' \
     && export UPDATE_CHECK='N' \
     && export SKIP_DBSYNC_DOWNLOAD='Y' \
-    && ./guild-deploy.sh -b ${GUILD_DEPLOY_BRANCH} -s dmowx \
+    && ./guild-deploy.sh -b ${GUILD_DEPLOY_BRANCH} -s dmwx \
     && cd /usr/bin \
     && wget http://www.vdberg.org/~richard/tcpping \
     && chmod 755 tcpping \
