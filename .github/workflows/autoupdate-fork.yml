@@ -10,13 +10,13 @@ jobs:
     runs-on: ubuntu-latest
     steps:
       - name: Fork Sync alpha (default branch)
-        uses: tgymnich/fork-sync@v1.9.0
+        uses: tgymnich/fork-sync@v2.0.10
         with:
           owner: cardano-community
           base: alpha
           head: alpha
       - name: Fork Sync master (production branch)
-        uses: tgymnich/fork-sync@v1.9.0
+        uses: tgymnich/fork-sync@v2.0.10
         with:
           owner: cardano-community
           base: master
