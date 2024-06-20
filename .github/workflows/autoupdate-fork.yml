@@ -16,7 +16,7 @@ jobs:
           base: alpha
           head: alpha
           auto_approve: true
-          token: ${{ github.token }}
+          token: ${{ secrets.SYNC_TOKEN }}
       - name: Fork Sync master (production branch)
         uses: tgymnich/fork-sync@v2.0.10
         with:
@@ -24,4 +24,4 @@ jobs:
           base: master
           head: master
           auto_approve: true
-          token: ${{ github.token }}
+          token: ${{ secrets.SYNC_TOKEN }}
