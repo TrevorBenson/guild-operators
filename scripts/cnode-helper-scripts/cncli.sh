@@ -126,6 +126,20 @@ getLedgerData() { # getNodeMetrics expected to have been already run
   return 0
 }
 
+getConsensus() {
+  getProtocolParams
+  if versionCheck "10.0" "${PROT_VERSION}"; then
+    consensus="cpraos"
+    stability_window_factor=3
+  elif versionCheck "7.0" "${PROT_VERSION}"; then
+    consensus="praos"
+    stability_window_factor=2
+  else
+    consensus="tpraos"
+    stability_window_factor=2
+  fi
+}
+
 getKoiosData() {
   [[ -z ${KOIOS_API} ]] && return 1
   if ! stake_snapshot=$(curl -sSL -f -d _pool_bech32=${POOL_ID_BECH32} "${KOIOS_API}/pool_stake_snapshot" 2>&1); then
@@ -145,6 +159,7 @@ getKoiosData() {
 
 #################################
 
+# shellcheck disable=SC2120
 cncliInit() {
   if renice_cmd="$(command -v renice)"; then ${renice_cmd} -n 19 $$ >/dev/null; fi
   [[ -z "${BATCH_AUTO_UPDATE}" ]] && BATCH_AUTO_UPDATE=N
@@ -268,8 +283,7 @@ cncliLeaderlog() {
   
   [[ ${subarg} != "force" ]] && echo "Node in sync, sleeping for ${SLEEP_RATE}s before running leaderlogs for current epoch" && sleep ${SLEEP_RATE}
   getNodeMetrics
-  getProtocolParams
-  if versionCheck "8.0" "${PROT_VERSION}"; then consensus="praos"; else consensus="tpraos"; fi
+  getConsensus
   curr_epoch=${epochnum}
   if [[ $(sqlite3 "${BLOCKLOG_DB}" "SELECT COUNT(*) FROM epochdata WHERE epoch=${curr_epoch};" 2>/dev/null) -eq 1 && ${subarg} != "force" ]]; then
     echo "Leaderlogs already calculated for epoch ${curr_epoch}, skipping!"
@@ -329,17 +343,18 @@ cncliLeaderlog() {
   while true; do
     [[ ${subarg} != "force" ]] && sleep ${SLEEP_RATE}
     getNodeMetrics
-    getProtocolParams
-    if versionCheck "8.0" "${PROT_VERSION}"; then consensus="praos"; else consensus="tpraos"; fi
+    getConsensus
     if ! cncliDBinSync; then # verify that cncli DB is still in sync
       echo "CNCLI DB out of sync :( [$(printf "%2.4f %%" ${cncli_sync_prog})] ... checking again in ${SLEEP_RATE}s"
       [[ ${subarg} = force ]] && sleep ${SLEEP_RATE}
       continue
     fi
-    slot_for_next_nonce=$(echo "(${slotnum} - ${slot_in_epoch} + ${EPOCH_LENGTH}) - (3 * ${BYRON_K} / ${ACTIVE_SLOTS_COEFF})" | bc) # firstSlotOfNextEpoch - stabilityWindow(3 * k / f)
+    # firstSlotOfNextEpoch - stabilityWindow((3|4) * k / f)
+    # due to issues with timing, calculation is moved one tick to 8/10 of epoch for pre conway, and 7/10 post conway.
+    slot_for_next_nonce=$(echo "(${slotnum} - ${slot_in_epoch} + ${EPOCH_LENGTH}) - (${stability_window_factor} * ${BYRON_K} / ${ACTIVE_SLOTS_COEFF})" | bc)
     curr_epoch=${epochnum}
     next_epoch=$((curr_epoch+1))
-    if [[ ${slotnum} -gt $(( slot_for_next_nonce + 600 )) ]]; then # Run leaderlogs for next epoch (with 10 min delay)
+    if [[ ${slotnum} -gt ${slot_for_next_nonce} ]]; then # Time to run leaderlogs for next epoch?
       if [[ $(sqlite3 "${BLOCKLOG_DB}" "SELECT COUNT(*) FROM epochdata WHERE epoch=${next_epoch};" 2>/dev/null) -eq 1 ]]; then # Leaderlogs already calculated for next epoch, skipping!
         if [[ -t 1 ]]; then # manual execution
           [[ ${subarg} != "force" ]] && echo "Leaderlogs already calculated for epoch ${next_epoch}, skipping!" && break
@@ -378,6 +393,10 @@ cncliLeaderlog() {
 					INSERT OR IGNORE INTO epochdata (epoch, epoch_nonce, pool_id, sigma, d, epoch_slots_ideal, max_performance, active_stake, total_active_stake)
 					VALUES (${next_epoch}, '${epoch_nonce}', '${pool_id}', '${sigma}', ${d}, ${epoch_slots_ideal}, ${max_performance}, '${active_stake}', '${total_active_stake}');
 					EOF
+        if block_cnt=$(sqlite3 "${BLOCKLOG_DB}" "SELECT COUNT(*) FROM blocklog WHERE epoch=${next_epoch};" 2>/dev/null) && [[ ${block_cnt} -gt 0 ]]; then
+          echo -e "\nPruning ${block_cnt} entries from blocklog db for epoch ${next_epoch}\n"
+          sqlite3 "${BLOCKLOG_DB}" "DELETE FROM blocklog WHERE epoch=${next_epoch};" 2>/dev/null
+        fi
         block_cnt=0
         while read -r assigned_slot; do
           block_slot=$(jq -r '.slot' <<< "${assigned_slot}")
