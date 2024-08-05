@@ -573,7 +573,7 @@ download_mithril() {
     rm -f mithril.tar.gz
     [[ -f mithril-signer ]] || err_exit " mithril archive downloaded but binary (mithril-signer) not found after extracting package!"
     [[ -f mithril-client ]] || err_exit " mithril archive downloaded but binary (mithril-client) not found after extracting package!"
-    mv -t "${HOME}"/.local/bin mithril-signer mithril-client
+    mv -t "${HOME}"/.local/bin mithril-signer mithril-client mithril-aggregator
     chmod +x "${HOME}"/.local/bin/*
 }
 
