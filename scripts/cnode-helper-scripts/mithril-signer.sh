@@ -227,12 +227,12 @@ else
       METRICS_SERVER_PARAMS="--enable-metrics-server --metrics-server-ip ${METRICS_SERVER_IP} --metrics-server-port ${METRICS_SERVER_PORT}"
       # If ENABLE_METRICS_SERVER is true, then an environment update will enable gLiveView automatically.
       sudo sed -i 's/#MITHRIL_SIGNER_ENABLED="[YN]"/MITHRIL_SIGNER_ENABLED="Y"/' ${CNODE_HOME}/scripts/env
-      if ! "${MITHRILBIN}" ${METRICS_SERVER_PARAMS} -vv | tee -a "${LOG_DIR}/$(basename "${0::-3}")".log 2>&1 ; then
+      if ! "${MITHRILBIN}" ${METRICS_SERVER_PARAMS} -vvvvv | tee -a "${LOG_DIR}/$(basename "${0::-3}")".log 2>&1 ; then
         echo "Failed to start Mithril Signer Server with metrics enabled" | tee -a "${LOG_DIR}/$(basename "${0::-3}")".log 2>&1
         exit 1
       fi
     else
-      if ! "${MITHRILBIN}" -vv | tee -a "${LOG_DIR}/$(basename "${0::-3}")".log 2>&1 ; then
+      if ! "${MITHRILBIN}" -vvvvv | tee -a "${LOG_DIR}/$(basename "${0::-3}")".log 2>&1 ; then
         echo "Failed to start Mithril Signer Server" | tee -a "${LOG_DIR}/$(basename "${0::-3}")".log 2>&1
         exit 1
       fi
