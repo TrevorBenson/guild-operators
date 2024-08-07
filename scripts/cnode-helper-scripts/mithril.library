@@ -589,8 +589,8 @@ get_relay_endpoint() {
 
 mithril_signer_init() {
   [[ ! -f "${MITHRIL_HOME}"/mithril.env ]] && generate_environment_file
-  grep -v '^ *#' < "${MITHRIL_HOME}"/mithril.env | while IFS= read -r line ; do
-    export "${line}"
+  for line in $(cat "${MITHRIL_HOME}"/mithril.env) ; do
+    export "${line?}"
   done
   # Move logs to archive
   [[ -d "${LOG_DIR}"/archive ]] || mkdir -p "${LOG_DIR}"/archive
