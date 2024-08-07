@@ -191,7 +191,6 @@ check_mithril_upgrade_safe() {
     NODE_CURRENT_VERSION=$(cardano-node --version | awk 'NR==1{print $2}')
   fi
   set_node_minimum_version
-  echo -e "Checking semantic_version_comare: "
   semantic_version_compare "${NODE_CURRENT_VERSION}" "${MITHRIL_MINIMUM_NODE_VERSION}"
   if [[ $? -lt 2 ]]; then
     # Node version is greater than or equal to the minimum required version for latest mithril release
@@ -201,8 +200,6 @@ check_mithril_upgrade_safe() {
     echo "INFO: The latest mithril release version: ${MITHRIL_LATEST_VERSION}."
     echo "INFO: The current Node version: ${NODE_CURRENT_VERSION}."
     echo "INFO: The Mithril minimum required node version: ${MITHRIL_MINIMUM_NODE_VERSION}."
-    # Return 0 to indicate that the node version is safe for mithril upgrade for CI workflows
-    return 0
   else
     # Node version is less than the minimum required version for latest mithril release
     echo "WARNING: A mithril upgrade is not safe."
@@ -211,8 +208,6 @@ check_mithril_upgrade_safe() {
     echo "WARNING: The Mithril minimum required node version: ${MITHRIL_MINIMUM_NODE_VERSION}."
     echo "WARNING: The latest mithril release does not support the installed node version. Please upgrade the node version first."
     MITHRIL_UPGRADE_SAFE="N"
-    # Return 1 to indicate that the node version is not safe for mithril upgrade for CI workflows
-    return 1
   fi
 }
 
