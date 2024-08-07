@@ -121,7 +121,7 @@ function main() {
       echo "Starting Mithril Signer Server.."
       trap 'user_interrupt_received' INT
 
-      if grep -q "ENABLE_METRICS_SERVER=true" ${CNODE_HOME}/mithril/mithril.env; then
+      if grep -q "ENABLE_METRICS_SERVER=true" ${MITHRIL_HOME}/mithril.env; then
         METRICS_SERVER_PARAMS="--enable-metrics-server --metrics-server-ip ${METRICS_SERVER_IP} --metrics-server-port ${METRICS_SERVER_PORT}"
         # If ENABLE_METRICS_SERVER is true, then an environment update will enable gLiveView automatically.
         # shellcheck disable=SC2154
