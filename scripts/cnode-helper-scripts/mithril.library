@@ -190,7 +190,15 @@ check_mithril_upgrade_safe() {
     # When run in online mode, the node version is obtained from the cardano-node binary
     NODE_CURRENT_VERSION=$(cardano-node --version | awk 'NR==1{print $2}')
   fi
+
+  # Debug output
+  echo "DEBUG: NODE_CURRENT_VERSION=${NODE_CURRENT_VERSION}"
+
   set_node_minimum_version
+
+  # Debug output
+  echo "DEBUG: MITHRIL_MINIMUM_NODE_VERSION=${MITHRIL_MINIMUM_NODE_VERSION}"
+
   semantic_version_compare "${NODE_CURRENT_VERSION}" "${MITHRIL_MINIMUM_NODE_VERSION}"
   if [[ $? -lt 2 ]]; then
     # Node version is greater than or equal to the minimum required version for latest mithril release
@@ -209,6 +217,9 @@ check_mithril_upgrade_safe() {
     echo "WARNING: The latest mithril release does not support the installed node version. Please upgrade the node version first."
     MITHRIL_UPGRADE_SAFE="N"
   fi
+
+  # Debug output
+  echo "DEBUG: MITHRIL_UPGRADE_SAFE=${MITHRIL_UPGRADE_SAFE}"
 }
 
 set_node_minimum_version() {

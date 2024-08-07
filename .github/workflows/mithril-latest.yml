@@ -19,7 +19,9 @@ jobs:
         run: |
           VERSION=$(cat ./files/docker/node/release-versions/mithril-latest.txt)
       - name: Source mithril.library and check upgrade safety
+        id: safety-check
         run: |
+          set -e
           . scripts/cnode-helper-scripts/mithril.library offline
           check_mithril_upgrade_safe
           echo "MITHRIL_UPGRADE_SAFE=$MITHRIL_UPGRADE_SAFE" >> $GITHUB_ENV
