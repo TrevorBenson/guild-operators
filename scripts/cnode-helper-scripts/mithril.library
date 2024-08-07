@@ -6,18 +6,15 @@
 # Do NOT modify code below           #
 ######################################
 
-if [[ "${1}" == "offline" ]] ; then
-  # Sourcing mithril.library in offline mode is for GitHub Actions workflow to safely
-  # update the files/docker/node/release-versions/mithril-latest.txt file without
-  # setting it to an incompatible version with the currently suported cardano-node
-  # version. There is no need to source the environment file in offline mode.
-  OFFLINE_MODE="Y"
-  echo "INFO: Sourcing mithril.library in offline mode, skipping sourcing of the environment file."
-else
-  CNODE_ENV_FILE="$(dirname $0)"/env
-  if [[ -f "${CNODE_ENV_FILE}" ]]; then
-    . "${CNODE_ENV_FILE}"
-  fi
+OFFLINE_MODE='N'
+[[ $1 = "offline" ]] && OFFLINE_MODE='Y'
+
+# Sourcing mithril.library in offline mode is for GitHub Actions workflow to safely
+# update the files/docker/node/release-versions/mithril-latest.txt file without
+# setting it to an incompatible version with the currently suported cardano-node
+# version. There is no need to source the environment file in offline mode.
+if [[ ${OFFLINE_MODE} == 'N' ]] ; then
+    . "$(dirname $0)"/env
 fi
 
 #############################
