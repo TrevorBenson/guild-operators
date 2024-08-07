@@ -45,12 +45,12 @@ function main() {
   # Parse command line options
   while getopts :dDekrsuh opt; do
     case ${opt} in
-      d ) 
+      d )
         DEPLOY_SYSTEMD="Y" ;;
       D )
         SIGNER_DAEMON="Y"
         ;;
-      e ) 
+      e )
         export UPDATE_ENVIRONMENT="Y"
         ;;
       k )

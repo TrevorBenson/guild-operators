@@ -64,7 +64,7 @@ function main() {
   case $1 in
     environment)
       case $2 in
-        setup)    
+        setup)
           generate_environment_file
           ;;
         override)
@@ -89,7 +89,7 @@ function main() {
           download_snapshot
           ;;
         snapshot)
-          case $3 in 
+          case $3 in
             list)
               case $4 in
                 json)

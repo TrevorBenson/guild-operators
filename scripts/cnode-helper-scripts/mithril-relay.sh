@@ -55,7 +55,7 @@ function main() {
       l)
         INSTALL_NGINX_LOAD_BALANCER=Y
         ;;
-      u) 
+      u)
         export SKIP_UPDATE='Y'
         ;;
       s)

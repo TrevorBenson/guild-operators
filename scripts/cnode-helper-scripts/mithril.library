@@ -48,7 +48,7 @@ compare_versions() {
 
 component_environment_setup() {
   check_mithril_environment_file_exists
-  
+
   if [[ -n "${POOL_NAME}" ]] && [[ "${POOL_NAME}" != "CHANGE_ME" ]] && [[ "$(basename "$0")" == "mithril-signer.sh" ]]; then
     update_mithril_environment_for_signer
   else
@@ -104,7 +104,7 @@ read_optional_ips_from_input() {
     local -n array_ref=$1     # Use nameref to reference the array passed by name
     local confirm_message=$2  # Confirmation message to ask if there are IP addresses to add
     local prompt_message=$3   # Prompt message for IP input if the user wants to add more IP addresses
-    
+
     while true; do
         read -r -p "$confirm_message" yn
         case ${yn} in
@@ -298,7 +298,7 @@ list_snapshots() {
   "${MITHRILBIN}" -v --aggregator-endpoint ${AGGREGATOR_ENDPOINT} cardano-db snapshot list $json_flag
 }
 
-# mithril-stake-distribution subcommand
+# mithril client mithril-stake-distribution subcommand
 list_stake_distributions() {
   local json_flag=""
 
@@ -307,7 +307,7 @@ list_stake_distributions() {
       json_flag="--json"
     fi
   done
-  
+
   "${MITHRILBIN}" -v --aggregator-endpoint ${AGGREGATOR_ENDPOINT} mithril-stake-distribution list $json_flag
 
 }
@@ -444,13 +444,13 @@ generate_squid_conf() {
   ${sudo} bash -c "cat <<-'EOF' > /etc/squid/squid.conf
 	# Listening port (port 3132 is recommended)
 	http_port ${RELAY_LISTENING_PORT}
-	
+
 	# ACL for aggregator endpoint
 	acl aggregator_domain dstdomain .mithril.network
-	
+
 	# ACL for SSL port only
 	acl SSL_port port 443
-	
+
 	EOF"
 
   # Write the ACLs for block producer IP addresses
@@ -474,7 +474,7 @@ generate_squid_conf() {
     ${sudo} bash -c 'echo "" >> /etc/squid/squid.conf'
     unset int
   fi
-  
+
   # Write the allow rules
   ${sudo} bash -c 'echo "# Allowed traffic" >> /etc/squid/squid.conf'
   int=0
@@ -491,16 +491,16 @@ generate_squid_conf() {
 
   # Write the fix chunk of the squid config file
   ${sudo} bash -c "cat <<-'EOF' >> /etc/squid/squid.conf
-	
+
 	# Do not disclose relay internal IP
 	forwarded_for delete
-	
+
 	# Turn off via header
 	via off
-	
+
 	# Deny request for original source of a request
 	follow_x_forwarded_for deny all
-	
+
 	# Anonymize request headers
 	request_header_access Authorization allow all
 	request_header_access Proxy-Authorization allow all
@@ -551,7 +551,7 @@ deploy_systemd() {
 	After=network-online.target
 	BindsTo=${CNODE_VNAME}.service
 	After=${CNODE_VNAME}.service
-	
+
 	[Service]
 	Type=simple
 	Restart=always
@@ -566,7 +566,7 @@ deploy_systemd() {
 	SyslogIdentifier=${CNODE_VNAME}-$(basename "${0::-3}")
 	TimeoutStopSec=5
 	KillMode=mixed
-	
+
 	[Install]
 	WantedBy=multi-user.target
 	EOF" && echo "${CNODE_VNAME}-$(basename "${0::-3}").service deployed successfully!!" && ${sudo} systemctl daemon-reload && ${sudo} systemctl enable ${CNODE_VNAME}-"$(basename "${0::-3}")".service
